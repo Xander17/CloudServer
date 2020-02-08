@@ -1,16 +1,23 @@
+import services.LogService;
+
 import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class Server {
-    public static void main(String[] args) {
-        try (ServerSocket serverSocket = new ServerSocket(8189)) {
-            System.out.println("Server starts.");
+
+    private final int BUFFER_SIZE = 8192;
+
+    public Server() {
+        try (ServerSocket serverSocket = new ServerSocket(GlobalSettings.CONNECTION_PORT)) {
+            LogService.SERVER.info("Server starts.");
             try (Socket socket = serverSocket.accept();
-                 BufferedInputStream in = new BufferedInputStream(socket.getInputStream())) {
+                 DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()))) {
                 System.out.println("Client connected.");
                 int b;
                 while ((b = in.read()) != -1) {
@@ -18,12 +25,12 @@ public class Server {
                     String name = getFileName(in);
                     if (name == null) continue;
                     System.out.println("Downloading: " + name);
-                    byte[] bytes = getData(in);
-                    if (bytes.length == 0) continue;
-                    FileOutputStream out = new FileOutputStream("server-root/" + name);
-                    out.write(bytes);
-                    out.close();
+                    if (downloadFileData(in, name)) System.out.println("Download complete");
+                    else System.out.println("Download failed");
                 }
+            } catch (NoSuchAlgorithmException e) {
+                System.out.println("Checksum calculating error");
+                e.printStackTrace();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -31,36 +38,41 @@ public class Server {
         System.out.println("Server shutdown.");
     }
 
-    private static boolean checkPackageStart(int b) {
-        return b == PackageSettings.PACKAGE_START;
+    private boolean checkPackageStart(int b) {
+        return b == GlobalSettings.PACKAGE_START_SIGNAL_BYTE;
     }
 
-    private static String getFileName(BufferedInputStream in) throws IOException {
-        int b = in.read();
-        if (b == -1) return null;
-        int length = b;
-        StringBuilder name = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            b = in.read();
-            if (b == -1) return null;
-            name.append((char) b);
-        }
-        return name.toString();
+    private String getFileName(DataInputStream in) throws IOException {
+        int length = in.readShort();
+        byte[] bytes = new byte[length];
+        if (in.read(bytes) != length) return null;
+        return new String(bytes);
     }
 
-    private static byte[] getData(BufferedInputStream in) throws IOException {
-        while (in.available() < 4) ;
-        byte[] bytes = new byte[4];
-        in.read(bytes);
-        int length = ByteBuffer.wrap(bytes).getInt();
-        System.out.println(length);
-        if (length <= 0) return new byte[0];
-        bytes = new byte[length];
-        int data;
-        for (int i = 0; i < length; i++) {
-            while ((data = in.read()) == -1) ;
-            bytes[i] = (byte) data;
+    private boolean downloadFileData(DataInputStream in, String filename) throws IOException, NoSuchAlgorithmException {
+        long length = in.readLong();
+        if (length <= 0) return false;
+        byte[] bytes = new byte[BUFFER_SIZE];
+        MessageDigest md = MessageDigest.getInstance(GlobalSettings.CHECKSUM_PROTOCOL);
+        FileOutputStream out = new FileOutputStream("server-root/" + filename);
+        while (length > 0) {
+            int blockSize = length >= BUFFER_SIZE ? BUFFER_SIZE : (int) length;
+            int bytesRead = in.read(bytes, 0, blockSize);
+            out.write(bytes, 0, bytesRead);
+            md.update(bytes, 0, bytesRead);
+            length -= bytesRead;
         }
-        return bytes;
+        return equalCheckSum(in, md.digest());
+    }
+
+    private boolean equalCheckSum(DataInputStream in, byte[] downloaded) throws IOException {
+        for (int i = 0; i < GlobalSettings.CHECKSUM_LENGTH; i++) {
+            if ((byte) in.read() != downloaded[i]) {
+                System.out.println("Checksum error");
+                return false;
+            }
+        }
+        System.out.println("Checksum OK");
+        return true;
     }
 }
