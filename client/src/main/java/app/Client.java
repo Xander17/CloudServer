@@ -1,7 +1,8 @@
-import java.io.BufferedInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
+package app;
+
+import settings.GlobalSettings;
+
+import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -14,14 +15,29 @@ import java.util.stream.Collectors;
 
 public class Client {
 
+
+    public static void main(String[] args) {
+        new Client();
+    }
+
     private final String HOST = "localhost";
     private final int BUFFER_SIZE = 8192;
+    private final Path REPOSITORY_DIRECTORY = Paths.get("client-repo");
 
     public Client() {
         try (Socket socket = new Socket(HOST, GlobalSettings.CONNECTION_PORT);
-             DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
+             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+             DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()))) {
+            if (Files.notExists(REPOSITORY_DIRECTORY)) Files.createDirectory(REPOSITORY_DIRECTORY);
             System.out.println("Connected to server.");
-            Set<Path> files = Files.list(Paths.get("client-root")).collect(Collectors.toSet());
+
+            out.write(GlobalSettings.COMMAND_START_SIGNAL_BYTE);
+            out.writeUTF("reg qwerty2 qwerty2");
+
+            out.write(GlobalSettings.COMMAND_START_SIGNAL_BYTE);
+            out.writeUTF("auth qwerty2 qwerty2");
+
+            Set<Path> files = Files.list(REPOSITORY_DIRECTORY).collect(Collectors.toSet());
             for (Path file : files) {
                 System.out.println("Uploading: " + file.getFileName());
                 out.write(GlobalSettings.PACKAGE_START_SIGNAL_BYTE);

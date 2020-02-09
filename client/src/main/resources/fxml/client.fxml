@@ -1,0 +1,36 @@
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.PasswordField?>
+<BorderPane fx:id="mainPane" xmlns="http://javafx.com/javafx/8.0.999-ea" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="app.Controller">
+    <center>
+        <StackPane>
+            <VBox fx:id="vBoxLogin" alignment="CENTER" maxHeight="70.0" maxWidth="250.0" styleClass="dialogWindow">
+                <Label styleClass="lblDialogWindowTitle" text="Sign in" maxWidth="200.0"/>
+                <Label styleClass="lblLoginWindow" text="Login"/>
+                <TextField fx:id="tfLogin" maxWidth="200" onAction="#passwordFocus"/>
+                <Label styleClass="lblLoginWindow" text="Password"/>
+                <PasswordField fx:id="tfPassword" maxWidth="200" onAction="#loginToServer"/>
+                <Label fx:id="lblLoginInfo" styleClass="lblLoginWindow"/>
+                <Button fx:id="btnLogin" maxWidth="150" onAction="#loginToServer" styleClass="btnNotControl"
+                        text="Sign in"/>
+                <Button maxWidth="150" onAction="#swapLoginReg" styleClass="btnNotControl" text="To sign up ->"/>
+            </VBox>
+            <VBox fx:id="vBoxRegistration" alignment="CENTER" maxHeight="70.0" maxWidth="250.0" visible="false"
+                  styleClass="dialogWindow">
+                <Label styleClass="lblDialogWindowTitle" text="Sign up" maxWidth="200.0"/>
+                <Label styleClass="lblLoginWindow" text="Login"/>
+                <TextField fx:id="tfRegLogin" maxWidth="200" onAction="#regPasswordFocus"/>
+                <Label styleClass="lblLoginWindow" text="Password"/>
+                <PasswordField fx:id="tfRegPassword" maxWidth="200" onAction="#signUp"/>
+                <Label fx:id="lblRegInfo" styleClass="lblLoginWindow"/>
+                <Button fx:id="btnReg" maxWidth="150" onAction="#signUp" styleClass="btnNotControl" text="Sign up"/>
+                <Button maxWidth="150" onAction="#swapLoginReg" styleClass="btnNotControl" text="To sign in ->"/>
+            </VBox>
+        </StackPane>
+    </center>
+</BorderPane>
