@@ -27,6 +27,14 @@ public class LogService {
         if (this != CONSOLE) CONSOLE.getLogger().error(msg);
     }
 
+    public void error(Exception e) {
+        StackTraceElement[] s = e.getStackTrace();
+        for (StackTraceElement element : s) {
+            logger.error(element);
+            if (this != CONSOLE) CONSOLE.getLogger().error(element);
+        }
+    }
+
     public void fatal(String... message) {
         String msg = String.join(": ", message);
         logger.fatal(msg);

@@ -1,6 +1,6 @@
 package app;
 
-import resources.ControlMessage;
+import resources.CommandMessage;
 import resources.LoginRegError;
 import services.AuthService;
 import services.LogService;
@@ -12,6 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ClientHandler {
 
@@ -33,49 +35,44 @@ public class ClientHandler {
         new Thread(() -> {
             try {
                 in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-                out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+                out = new DataOutputStream(socket.getOutputStream());
                 getUserLoginReg();
                 startDataListener();
             } catch (IOException e) {
-                LogService.SERVER.error(socket.toString(), e.toString());
+                e.printStackTrace();
+                LogService.SERVER.error(login, e.toString());
             } finally {
-                LogService.USERS.info("Disconnect", login, socket.toString());
-                closeIOStreams();
+                LogService.USERS.info("Disconnect", login);
                 server.deleteClient(this);
+                closeIOStreams();
             }
         }).start();
     }
 
     private void getUserLoginReg() throws IOException {
-        String[] loginPassPair;
-        String inputStr;
+        String[] inputCommandLoginPass;
         while (true) {
-            if(!checkCommandStart(in.read())) continue;
-            inputStr = in.readUTF();
-            loginPassPair = inputStr.split(" ", 3);
-            if (loginPassPair.length != 3) continue;
-            if (ControlMessage.AUTH.check(loginPassPair[0])) {
+            if (!checkCommandStart(in.readByte())) continue;
+            inputCommandLoginPass = in.readUTF().split(" ", 3);
+            if (inputCommandLoginPass.length != 3) continue;
+            if (CommandMessage.AUTH.check(inputCommandLoginPass[0])) {
                 LogService.AUTH.info(socket.toString(), "Auth attempt");
-                id = AuthService.checkLogin(loginPassPair[1], loginPassPair[2]);
+                id = AuthService.checkLogin(inputCommandLoginPass[1], inputCommandLoginPass[2]);
                 if (id == null) sendLoginRegError(LoginRegError.INCORRECT_LOGIN_PASS);
-                //else if (server.isUserOnline(login)) sendLoginRegError(LoginRegError.LOGGED_ALREADY);
-                    // TODO: 09.02.2020 подумать, нужно ли запрещать подключаться под одним логином
+                else if (server.isUserOnline(inputCommandLoginPass[1])) sendLoginRegError(LoginRegError.LOGGED_ALREADY);
                 else {
-                    login = loginPassPair[1];
-                    sendCommand(ControlMessage.AUTH_OK, id.toString());
-
-                    // TODO: 09.02.2020 отправить список файлов
-
+                    login = inputCommandLoginPass[1];
+                    sendCommand(CommandMessage.AUTH_OK, id.toString());
                     LogService.AUTH.info(login, socket.toString(), "Auth success");
                     break;
                 }
-            } else if (ControlMessage.REG.check(loginPassPair[0])) {
+            } else if (CommandMessage.REG.check(inputCommandLoginPass[0])) {
                 LogService.AUTH.info(socket.toString(), "Registration attempt");
-                String login = loginPassPair[1];
-                String pass = loginPassPair[2];
+                String login = inputCommandLoginPass[1];
+                String pass = inputCommandLoginPass[2];
                 LoginRegError error = AuthService.registerAndEchoMsg(login, pass);
                 if (error == null) {
-                    sendCommand(ControlMessage.REG_OK);
+                    sendCommand(CommandMessage.REG_OK);
                     LogService.AUTH.info(login, socket.toString(), "Registration success");
                 } else sendLoginRegError(error);
             }
@@ -86,9 +83,10 @@ public class ClientHandler {
         try {
             rootDir = MainServer.REPOSITORY_ROOT.resolve(login);
             if (Files.notExists(rootDir)) Files.createDirectory(rootDir);
+            sendFilesList(rootDir);
             int byteRead;
             while (true) {
-                byteRead = in.read();
+                byteRead = in.readByte();
                 if (checkPackageStart(byteRead)) downloadFile();
                 else if (checkCommandStart(byteRead)) ;
                 // TODO: 09.02.2020 обработать команды от клиента
@@ -107,6 +105,21 @@ public class ClientHandler {
 
     private boolean checkCommandStart(int b) {
         return b == GlobalSettings.COMMAND_START_SIGNAL_BYTE;
+    }
+
+    private void sendFilesList(Path rootDir) throws IOException {
+        sendCommand(CommandMessage.FILELIST);
+        List<Path> list = Files.list(rootDir).collect(Collectors.toList());
+        out.writeShort(list.size());
+        for (Path file:list){
+            writeFileInfo(file);
+        }
+    }
+
+    private void writeFileInfo(Path file) throws IOException {
+        String f = file.getFileName().toString();
+        out.writeShort((short) f.length());
+        out.write(f.getBytes());
     }
 
     private boolean downloadFile() throws IOException, NoSuchAlgorithmException {
@@ -145,6 +158,7 @@ public class ClientHandler {
             md.update(bytes, 0, bytesRead);
             length -= bytesRead;
         }
+        out.close();
         return equalCheckSum(in, md.digest());
     }
 
@@ -155,24 +169,28 @@ public class ClientHandler {
                 return false;
             }
         }
-        LogService.USERS.error(login, "Checksum OK");
+        LogService.USERS.info(login, "Checksum OK");
         return true;
     }
 
     private void sendLoginRegError(LoginRegError err) {
         LogService.AUTH.warn(socket.toString(), err.toString());
-        sendCommand(ControlMessage.ERROR, String.valueOf(err.ordinal()));
+        sendCommand(CommandMessage.ERROR, String.valueOf(err.ordinal()));
     }
 
-    public void sendCommand(ControlMessage m) {
-        sendCommand(m, "");
+    public void sendCommand(CommandMessage m) {
+        sendCommand(m.toString());
     }
 
-    public void sendCommand(ControlMessage m, String s) {
-        String msg = (char) GlobalSettings.COMMAND_START_SIGNAL_BYTE + m.toString() + " " + s;
+    public void sendCommand(CommandMessage m, String s) {
+        sendCommand(m.toString() + " " + s);
+    }
+
+    private void sendCommand(String s) {
         if (!socket.isClosed()) {
             try {
-                out.writeUTF(msg);
+                out.write(GlobalSettings.COMMAND_START_SIGNAL_BYTE);
+                out.writeUTF(s);
             } catch (IOException e) {
                 LogService.SERVER.error("IO", e.toString());
             }

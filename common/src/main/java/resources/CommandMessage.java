@@ -1,19 +1,20 @@
 package resources;
 
-public enum ControlMessage {
-    CLOSE_SERVER("/close", "Закрыть соединение"),
-    COMMANDS_LIST("/help", "Помощь"),
+public enum CommandMessage {
+    CLOSE_SERVER("close", "Закрыть соединение"),
+    USER_LIST("users","Список пользователей"),
+    COMMANDS_LIST("help", "Помощь"),
     AUTH("auth", ""),
     AUTH_OK("authok", ""),
     ERROR("error", ""),
     REG("reg", ""),
     REG_OK("regok", ""),
-    FILELIST("filelist", "");
+    FILELIST("flist", "");
 
     private String message;
     private String description;
 
-    ControlMessage(String message, String description) {
+    CommandMessage(String message, String description) {
         this.message = message;
         this.description = description;
     }

@@ -1,5 +1,6 @@
 package app;
 
+import resources.CommandMessage;
 import settings.GlobalSettings;
 
 import java.io.*;
@@ -12,6 +13,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Client {
 
@@ -31,11 +33,15 @@ public class Client {
             if (Files.notExists(REPOSITORY_DIRECTORY)) Files.createDirectory(REPOSITORY_DIRECTORY);
             System.out.println("Connected to server.");
 
-            out.write(GlobalSettings.COMMAND_START_SIGNAL_BYTE);
-            out.writeUTF("reg qwerty2 qwerty2");
+//            out.write(GlobalSettings.COMMAND_START_SIGNAL_BYTE);
+//            out.writeUTF("reg qwerty2 qwerty2");
 
             out.write(GlobalSettings.COMMAND_START_SIGNAL_BYTE);
             out.writeUTF("auth qwerty2 qwerty2");
+            System.out.println(in.read()==GlobalSettings.COMMAND_START_SIGNAL_BYTE);
+            String[] input=in.readUTF().split(" ",2);
+            System.out.println(CommandMessage.AUTH_OK.check(input[0]));
+            getFilesList(in);
 
             Set<Path> files = Files.list(REPOSITORY_DIRECTORY).collect(Collectors.toSet());
             for (Path file : files) {
@@ -54,6 +60,24 @@ public class Client {
             e.printStackTrace();
         }
         System.out.println("Connection closed");
+    }
+
+    private void getFilesList(DataInputStream in) throws IOException {
+        if (in.read() == GlobalSettings.COMMAND_START_SIGNAL_BYTE) ;
+        if (CommandMessage.FILELIST.check(in.readUTF())) {
+            int filesCount = in.readShort();
+            if (filesCount == 0) return;
+            for (int i = 0; i < filesCount; i++) {
+                System.out.println(getFileName(in));
+            }
+        }
+    }
+
+    private String getFileName(DataInputStream in) throws IOException {
+        int length = in.readShort();
+        byte[] bytes = new byte[length];
+        if (in.read(bytes) != length) return null;
+        return new String(bytes);
     }
 
     private void writeFileInfo(DataOutputStream out, Path file) throws IOException {
