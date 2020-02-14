@@ -2,7 +2,6 @@ package services;
 
 import app.ClientHandler;
 import app.MainServer;
-import resources.CommandMessage;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,6 +14,7 @@ public class ConsoleHandler {
 
     public ConsoleHandler(MainServer server) {
         this.server = server;
+        runConsoleHandler();
     }
 
     private void runConsoleHandler() {
@@ -24,23 +24,19 @@ public class ConsoleHandler {
             try {
                 while (true) {
                     consoleString = consoleIn.readLine();
-                    if (consoleString.trim().isEmpty() || !consoleString.startsWith("/")) continue;
-                    consoleString = getConsoleCommand(consoleString);
+                    if (consoleString.trim().isEmpty() || !CommandMessage.isControlMessage(consoleString)) continue;
+                    consoleString = CommandMessage.getCommand(consoleString);
                     if (CommandMessage.CLOSE_SERVER.check(consoleString)) break;
                     else if (CommandMessage.USER_LIST.check(consoleString)) printUsersList();
                 }
             } catch (IOException e) {
                 LogService.SERVER.error(e.toString());
             } finally {
-                server.serverShutDown();
+                server.closeChannel();
             }
         });
         consoleThread.setDaemon(true);
         consoleThread.start();
-    }
-
-    private String getConsoleCommand(String string) {
-        return string.replaceFirst("/", "");
     }
 
     private void printUsersList() {

@@ -1,15 +1,9 @@
-package resources;
+package services;
 
 public enum CommandMessage {
     CLOSE_SERVER("close", "Закрыть соединение"),
     USER_LIST("users","Список пользователей"),
-    COMMANDS_LIST("help", "Помощь"),
-    AUTH("auth", ""),
-    AUTH_OK("authok", ""),
-    ERROR("error", ""),
-    REG("reg", ""),
-    REG_OK("regok", ""),
-    FILELIST("flist", "");
+    COMMANDS_LIST("help", "Помощь");
 
     private String message;
     private String description;
@@ -37,6 +31,10 @@ public enum CommandMessage {
 
     public static boolean isControlMessage(String s) {
         return s.startsWith("/");
+    }
+
+    public static String getCommand(String string) {
+        return string.replaceFirst("/", "");
     }
 
     @Override

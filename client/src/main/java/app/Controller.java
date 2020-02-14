@@ -7,18 +7,18 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-import resources.CommandMessage;
+import resources.CommandBytes;
 import resources.LoginRegError;
-import settings.GlobalSettings;
+import services.FormatChecker;
+import services.LogService;
+import services.NetworkThread;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.Socket;
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.concurrent.CountDownLatch;
 
 import static resources.LoginRegError.LOGIN_EXISTS;
+import static resources.LoginRegError.RESPONSE_ERROR;
 
 public class Controller implements Initializable {
     @FXML
@@ -30,11 +30,9 @@ public class Controller implements Initializable {
     @FXML
     private Button btnLogin, btnReg;
 
-    private DataInputStream in = null;
-    private DataOutputStream out = null;
-    private Socket socket = null;
-
-    private String id;
+    private ServerHandler serverHandler;
+    private NetworkThread networkThread;
+    private int id;
     private boolean loginState = true;
 
     @Override
@@ -42,49 +40,76 @@ public class Controller implements Initializable {
         runServerListener();
     }
 
+    // TODO: 15.02.2020 посмотреть, почему клиент не отключается после закрытия окна
     private void runServerListener() {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        networkThread = new NetworkThread(this, countDownLatch);
+        //networkThread.setDaemon(true);
+        networkThread.start();
         try {
-            socket = new Socket(GlobalSettings.CONNECTION_HOST, GlobalSettings.CONNECTION_PORT);
-            in = new DataInputStream(socket.getInputStream());
-            out = new DataOutputStream(socket.getOutputStream());
-            new Thread(() -> {
-                try {
-                    loginRegWindow();
-//                    getMessages();
-                } catch (IOException ignored) {
-                } finally {
-                    closeIOStreams();
-                }
-            }).start();
-        } catch (IOException e) {
-            System.out.println("Server connection error!");
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            LogService.SERVER.error(e);
         }
     }
 
-    private void loginRegWindow() throws IOException {
-        String[] inputCommandData;
-        while (true) {
-            if (!checkCommandStart(in.readByte())) continue;
-            inputCommandData = in.readUTF().split(" ", 2);
-            if (CommandMessage.AUTH_OK.check(inputCommandData[0]) && vBoxLogin.isVisible()) {
-                id = inputCommandData[1];
-                setLoginState(false);
-                break;
-            } else if (CommandMessage.ERROR.check(inputCommandData[0]) && vBoxLogin.isVisible()) {
-                setLoginInfo(inputCommandData[1]);
-            } else if (CommandMessage.REG_OK.check(inputCommandData[0]) && vBoxRegistration.isVisible()) {
-                String login = tfRegLogin.getText().trim();
-                String pass = tfRegPassword.getText();
-                swapLoginReg(login, pass);
-            } else if (CommandMessage.ERROR.check(inputCommandData[0]) && vBoxRegistration.isVisible()) {
-                setRegInfo(inputCommandData[1]);
-            }
+    public void signUp() {
+        if (serverHandler == null) serverHandler = networkThread.getClientInboundHandler().getServerHandler();
+        btnReg.requestFocus();
+        String login = tfRegLogin.getText().trim();
+        String pass = tfRegPassword.getText();
+        FormatChecker formatChecker = new FormatChecker();
+        // TODO: 14.02.2020 проверка на соединение
+        //if (!isSocketOpen()) setRegInfo(LoginRegError.NO_CONNECTION);
+        if (!formatChecker.checkLoginFormat(login)) setRegInfo(formatChecker.getCurrentError());
+        else if (!formatChecker.checkPasswordFormat(pass)) setRegInfo(formatChecker.getCurrentError());
+        else if (!login.isEmpty() && !pass.isEmpty()) {
+            serverHandler.sendRegAuthData(CommandBytes.REG, login, pass);
+        } else {
+            Platform.runLater(() -> {
+                tfRegLogin.setText(login);
+                setRegInfo(LoginRegError.NOT_ENOUGH_DATA);
+            });
         }
     }
 
-    private void setLoginInfo(String s) {
-        LoginRegError error = getErrorString(s);
-        setLoginInfo(error);
+    public void loginToServer() {
+        if (serverHandler == null) serverHandler = networkThread.getClientInboundHandler().getServerHandler();
+        btnLogin.requestFocus();
+        String login = tfLogin.getText().trim();
+        String pass = tfPassword.getText();
+        // TODO: 14.02.2020 проверка на соединение
+        //if (!isSocketOpen()) setLoginInfo(LoginRegError.NO_CONNECTION);
+        if (!login.isEmpty() && !pass.isEmpty()) {
+            serverHandler.sendRegAuthData(CommandBytes.AUTH, login, pass);
+        } else {
+            Platform.runLater(() -> {
+                tfLogin.setText(login);
+                setLoginInfo(LoginRegError.NOT_ENOUGH_DATA);
+            });
+        }
+    }
+
+    public void setRegSuccess() {
+        if (!vBoxRegistration.isVisible()) return;
+        String login = tfRegLogin.getText().trim();
+        String pass = tfRegPassword.getText();
+        swapLoginReg(login, pass);
+    }
+
+    public void setAuthSuccess(int id) {
+        if (!vBoxLogin.isVisible()) return;
+        this.id = id;
+        setLoginState(false);
+    }
+
+    public void setRegAuthError(int code) {
+        LoginRegError[] errors = LoginRegError.values();
+        LoginRegError error;
+        if (code >= errors.length || code < 0) error = RESPONSE_ERROR;
+        else error = errors[code];
+        if (vBoxLogin.isVisible()) setLoginInfo(error);
+        else if (vBoxRegistration.isVisible()) setRegInfo(error);
     }
 
     private void setLoginInfo(LoginRegError error) {
@@ -92,11 +117,6 @@ public class Controller implements Initializable {
             lblLoginInfo.setText(error.toString());
             tfLogin.requestFocus();
         });
-    }
-
-    private void setRegInfo(String s) {
-        LoginRegError error = getErrorString(s);
-        setRegInfo(error);
     }
 
     private void setRegInfo(LoginRegError error) {
@@ -109,45 +129,6 @@ public class Controller implements Initializable {
         });
     }
 
-    private LoginRegError getErrorString(String index) {
-        LoginRegError errorString;
-        try {
-            int i = Integer.parseInt(index);
-            if (i < LoginRegError.values().length)
-                errorString = LoginRegError.values()[i];
-            else errorString = LoginRegError.RESPONSE_ERROR;
-        } catch (NumberFormatException e) {
-            errorString = LoginRegError.RESPONSE_ERROR;
-        }
-        return errorString;
-    }
-
-    private boolean checkCommandStart(int b) {
-        return b == GlobalSettings.COMMAND_START_SIGNAL_BYTE;
-    }
-
-    public void loginToServer() {
-
-    }
-
-    public void signUp() {
-
-    }
-
-    private void closeIOStreams() {
-        try {
-            in.close();
-        } catch (IOException | NullPointerException ignored) {
-        }
-        try {
-            out.close();
-        } catch (IOException | NullPointerException ignored) {
-        }
-        try {
-            socket.close();
-        } catch (IOException | NullPointerException ignored) {
-        }
-    }
 
     public void passwordFocus() {
         tfPassword.requestFocus();

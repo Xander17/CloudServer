@@ -1,0 +1,43 @@
+* {
+    -fx-base-darkcolor: #515153;
+    -fx-bordercolor: #a8b1b2;
+    -fx-base-color3: #c3cbc7;
+    -fx-base-lightcolor: #f0efee;
+
+    -fx-textcolor-alert: red;
+
+    -fx-font-color: -fx-base-darkcolor;
+    -fx-font-over-color: -fx-base-lightcolor;
+
+    -fx-textfield-col1: -fx-base-color3;
+    -fx-textfield-col2: -fx-base-lightcolor;
+
+    -fx-textarea-col1: -fx-base-color3;
+    -fx-textarea-col2: -fx-base-lightcolor;
+
+    -fx-windows-bg-col1: -fx-base-lightcolor;
+    -fx-windows-bg-col2: -fx-base-color3;
+
+    -fx-button-up-col1: -fx-base-lightcolor;
+    -fx-button-up-col2: -fx-base-color3;
+
+    -fx-button-over-col: -fx-base-color3;
+
+    -fx-button-down-col1: -fx-base-color3;
+    -fx-button-down-col2: -fx-base-lightcolor;
+
+    -fx-scrollbar: -fx-base-lightcolor;
+    -fx-scroll-col1: -fx-base-color3;
+    -fx-scroll-col2: -fx-base-lightcolor;
+
+    -fx-menu-hover-col1: -fx-base-color3;
+    -fx-menu-hover-col2: -fx-base-darkcolor;
+
+    -fx-menu-bg-col1: -fx-base-lightcolor;
+    -fx-menu-bg-col2: -fx-bordercolor;
+
+    -fx-title-bg-col1: -fx-base-lightcolor;
+    -fx-title-bg-col2: -fx-bordercolor;
+
+    -fx-list-bg-hover:-fx-base-darkcolor;
+}

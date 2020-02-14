@@ -1,13 +1,16 @@
 package app;
 
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import services.ConsoleHandler;
 import services.DatabaseSQL;
 import services.LogService;
-import settings.GlobalSettings;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,46 +18,68 @@ import java.util.Vector;
 
 public class MainServer {
 
-    public static final int BUFFER_SIZE = 8192;
     public static final Path REPOSITORY_ROOT = Paths.get("server-repo");
     private DatabaseSQL db;
-    private ServerSocket serverSocket;
+    private ChannelFuture channelFuture;
 
     private Vector<ClientHandler> clients = new Vector<>();
 
     public MainServer() {
-        runServer();
-        new ConsoleHandler(this);
+        try {
+            runDB();
+            checkRepositoryExists();
+            new ConsoleHandler(this);
+            runServer();
+        } catch (IOException e) {
+            LogService.SERVER.error(e.toString());
+        } catch (InterruptedException e) {
+            LogService.SERVER.error(e.toString());
+        }
     }
 
-    private void runServer() {
+    private void runDB() {
         db = DatabaseSQL.getInstance();
         db.connect();
-        new Thread(() -> {
-            try {
-                serverSocket = new ServerSocket(GlobalSettings.CONNECTION_PORT);
-                if (Files.notExists(REPOSITORY_ROOT)) Files.createDirectory(REPOSITORY_ROOT);
-                LogService.SERVER.info("Server started.");
-                while (true) {
-                    Socket socket = serverSocket.accept();
-                    addClient(socket);
-                    LogService.SERVER.info("New client connected. " + socket + ". " + getConnectionsCountInfo());
-                }
-            } catch (IOException e) {
-                LogService.SERVER.error(e.toString());
-            } finally {
-                serverShutDown();
-            }
-        }).start();
     }
 
-    private void addClient(Socket socket) {
-        clients.add(new ClientHandler(this, socket));
+    private void checkRepositoryExists() throws IOException {
+        if (Files.notExists(REPOSITORY_ROOT)) Files.createDirectory(REPOSITORY_ROOT);
     }
 
-    public void deleteClient(ClientHandler client) {
+    private void runServer() throws InterruptedException {
+        EventLoopGroup bossGroup = new NioEventLoopGroup();
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        try {
+            ServerBootstrap bootstrap = new ServerBootstrap();
+            bootstrap.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        public void initChannel(SocketChannel ch) {
+                            ch.pipeline().addLast(new ServerInboundHandler(MainServer.this));
+                        }
+                    })
+                    .childOption(ChannelOption.SO_KEEPALIVE, true);
+            channelFuture = bootstrap.bind(8189).sync();
+            LogService.SERVER.info("Server starts");
+            channelFuture.channel().closeFuture().sync();
+        } finally {
+            serverShutDown();
+            workerGroup.shutdownGracefully();
+            bossGroup.shutdownGracefully();
+        }
+    }
+
+    public ClientHandler addClient(ChannelHandlerContext ctx, ByteBuf byteBuf) {
+        ClientHandler clientHandler = new ClientHandler(this, ctx, byteBuf);
+        clients.add(clientHandler);
+        LogService.SERVER.info("New client connected", ctx.channel().remoteAddress().toString(), getConnectionsCountInfo());
+        return clientHandler;
+    }
+
+    public void deleteClient(ChannelHandlerContext ctx, ClientHandler client) {
         clients.remove(client);
-        LogService.SERVER.info("Client disconnected.", "Login", client.getLogin(), getConnectionsCountInfo());
+        LogService.SERVER.info("Client disconnected", client.getLogin(), ctx.channel().remoteAddress().toString(), getConnectionsCountInfo());
     }
 
     public boolean isUserOnline(String login) {
@@ -70,18 +95,20 @@ public class MainServer {
     }
 
     public void serverShutDown() {
-        try {
-            clients.forEach(ClientHandler::closeIOStreams);
-            serverSocket.close();
-            db.shutdown();
-        } catch (IOException e) {
-            LogService.SERVER.error("Shutdown error", e.toString());
-        } finally {
-            LogService.SERVER.info("Server shutdown.");
-        }
+        db.shutdown();
+        LogService.SERVER.info("Server shutdown");
+    }
+
+    public void closeChannel() {
+        clients.forEach(ClientHandler::closeChannel);
+        channelFuture.channel().close();
     }
 
     public Vector<ClientHandler> getClients() {
         return clients;
+    }
+
+    public static void main(String[] args) {
+        new MainServer();
     }
 }

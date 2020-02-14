@@ -23,6 +23,12 @@ public class LogService {
         logger.error(msg);
     }
 
+    public void error(Throwable e) {
+        StackTraceElement[] s = e.getStackTrace();
+        for (StackTraceElement element : s) {
+            logger.error(element);
+        }
+    }
     public void fatal(String... message) {
         String msg = String.join(": ", message);
         logger.fatal(msg);

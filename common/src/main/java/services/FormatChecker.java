@@ -2,6 +2,7 @@ package services;
 
 import resources.LoginRegError;
 
+// TODO: 15.02.2020 Нужен от в модуле common? Или только в клиенте
 public class FormatChecker {
 
     private LoginRegError currentError;

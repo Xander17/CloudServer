@@ -6,6 +6,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 public class ClientStart extends Application {
 
@@ -18,6 +19,8 @@ public class ClientStart extends Application {
         primaryStage.setScene(new Scene(root, 800, 700));
         primaryStage.setMinWidth(300);
         primaryStage.setMinHeight(300);
+        primaryStage.getScene().getStylesheets().add("css/base_style.css");
+        primaryStage.getScene().getStylesheets().add("css/gradient_style.css");
         primaryStage.getScene().getStylesheets().add(DEFAULT_STYLE);
         primaryStage.getIcons().add(new Image("img/icon.png"));
 //        primaryStage.initStyle(StageStyle.UNDECORATED);
