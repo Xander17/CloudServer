@@ -18,9 +18,6 @@ import java.util.concurrent.CountDownLatch;
 public class NetworkThread extends Thread {
     private CountDownLatch countDownLatch;
     private Controller controller;
-    private Channel channel;
-
-    private ClientInboundHandler clientInboundHandler;
 
     public NetworkThread(Controller controller, CountDownLatch countDownLatch) {
         this.countDownLatch = countDownLatch;
@@ -37,9 +34,7 @@ public class NetworkThread extends Thread {
                     .remoteAddress(new InetSocketAddress(GlobalSettings.CONNECTION_HOST, GlobalSettings.CONNECTION_PORT))
                     .handler(new ChannelInitializer<SocketChannel>() {
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            clientInboundHandler = new ClientInboundHandler(controller);
-                            socketChannel.pipeline().addLast(clientInboundHandler);
-                            channel = socketChannel;
+                            socketChannel.pipeline().addLast(new ClientInboundHandler(controller));
                         }
                     });
             ChannelFuture channelFuture = clientBootstrap.connect().sync();
@@ -54,13 +49,5 @@ public class NetworkThread extends Thread {
                 LogService.SERVER.error(e);
             }
         }
-    }
-
-    public Channel getChannel() {
-        return channel;
-    }
-
-    public ClientInboundHandler getClientInboundHandler() {
-        return clientInboundHandler;
     }
 }

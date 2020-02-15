@@ -12,9 +12,9 @@
             <VBox fx:id="vBoxLogin" alignment="CENTER" maxHeight="70.0" maxWidth="250.0" styleClass="dialogWindow">
                 <Label styleClass="lblDialogWindowTitle" text="Sign in" maxWidth="200.0"/>
                 <Label styleClass="lblLoginWindow" text="Login"/>
-                <TextField fx:id="tfLogin" maxWidth="200" onAction="#passwordFocus"/>
+                <TextField fx:id="tfLogin" maxWidth="200" onAction="#passwordFocus" text="qwerty"/>
                 <Label styleClass="lblLoginWindow" text="Password"/>
-                <PasswordField fx:id="tfPassword" maxWidth="200" onAction="#loginToServer"/>
+                <PasswordField fx:id="tfPassword" maxWidth="200" onAction="#loginToServer" text="qwerty"/>
                 <Label fx:id="lblLoginInfo" styleClass="lblLoginWindow"/>
                 <Button fx:id="btnLogin" maxWidth="150" onAction="#loginToServer" styleClass="btnNotControl"
                         text="Sign in"/>

@@ -54,7 +54,6 @@ public class Controller implements Initializable {
     }
 
     public void signUp() {
-        if (serverHandler == null) serverHandler = networkThread.getClientInboundHandler().getServerHandler();
         btnReg.requestFocus();
         String login = tfRegLogin.getText().trim();
         String pass = tfRegPassword.getText();
@@ -74,7 +73,6 @@ public class Controller implements Initializable {
     }
 
     public void loginToServer() {
-        if (serverHandler == null) serverHandler = networkThread.getClientInboundHandler().getServerHandler();
         btnLogin.requestFocus();
         String login = tfLogin.getText().trim();
         String pass = tfPassword.getText();
@@ -180,5 +178,9 @@ public class Controller implements Initializable {
 //        tfMessage.setVisible(status);
 //        taChat.setVisible(status);
 //        listUsers.setVisible(status);
+    }
+
+    public void setServerHandler(ServerHandler serverHandler) {
+        this.serverHandler = serverHandler;
     }
 }

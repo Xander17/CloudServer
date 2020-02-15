@@ -117,6 +117,7 @@ public class ClientHandler {
             else if (server.isUserOnline(incomingLogin)) sendLoginRegError(LoginRegError.LOGGED_ALREADY);
             else {
                 login = incomingLogin;
+                logged = true;
                 DataSocketWriter.sendCommand(ctx, CommandBytes.AUTH_OK, id);
                 setUserRepo();
                 downloader = new FileDownloader(rootDir, byteBuf);
@@ -139,7 +140,7 @@ public class ClientHandler {
                 .replace("'", "\\'");
     }
 
-    private void sendFilesList() throws IOException, NoEnoughDataException {
+    private void sendFilesList() throws IOException, NoEnoughDataException, InterruptedException {
         List<Path> list = Files.list(rootDir).collect(Collectors.toList());
         DataSocketWriter.sendCommand(ctx, CommandBytes.FILELIST, list.size());
         for (Path file : list) {

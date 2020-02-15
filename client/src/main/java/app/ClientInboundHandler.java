@@ -45,8 +45,4 @@ public class ClientInboundHandler extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         LogService.SERVER.error(cause.toString());
     }
-
-    public ServerHandler getServerHandler() {
-        return serverHandler;
-    }
 }
