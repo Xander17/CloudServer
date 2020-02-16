@@ -32,6 +32,8 @@ public class DataSocketWriter {
         if (data.length != GlobalSettings.COMMAND_DATA_LENGTH)
             data = Arrays.copyOf(data, GlobalSettings.COMMAND_DATA_LENGTH);
         buf.writeBytes(data);
+        // TODO: 16.02.2020 сделано для логирования, возможно нужно будет удалить
+        System.out.println("out bytes: " + Arrays.toString(data));
         try {
             ctx.writeAndFlush(buf).sync();
         } catch (InterruptedException e) {
@@ -43,6 +45,8 @@ public class DataSocketWriter {
     public static void sendCommand(ChannelHandlerContext ctx, CommandBytes b, int data) {
         ByteBuf buf = getCommandByteBuf(b);
         buf.writeInt(data);
+        // TODO: 16.02.2020 сделано для логирования, возможно нужно будет удалить
+        System.out.println("out int: " + data);
         try {
             ctx.writeAndFlush(buf).sync();
         } catch (InterruptedException e) {
@@ -55,6 +59,7 @@ public class DataSocketWriter {
         ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer(GlobalSettings.COMMAND_DATA_LENGTH + 2);
         buf.writeByte(CommandBytes.COMMAND_START.getByte());
         buf.writeByte(b.getByte());
+        System.out.println("out: " + CommandBytes.COMMAND_START.name() + " " + CommandBytes.getCommand(b.getByte()));
         return buf;
     }
 

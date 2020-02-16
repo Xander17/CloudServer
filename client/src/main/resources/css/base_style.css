@@ -104,7 +104,7 @@
     -fx-font-family: "Arial Black";
 }
 
-#taChat, .list-view {
+#taLogs, .list-view {
     -fx-background-color: -fx-textarea-bg;
     -fx-border-color: -fx-bordercolor;
     -fx-border-width: 2;
@@ -112,9 +112,9 @@
     -fx-effect: innershadow(three-pass-box, dimgrey, 2, 0, 1, 1);
 }
 
-#taChat .scroll-pane,
-#taChat .scroll-pane .viewport,
-#taChat .scroll-pane .content {
+#taLogs .scroll-pane,
+#taLogs .scroll-pane .viewport,
+#taLogs .scroll-pane .content {
     -fx-background-color: transparent;
 }
 

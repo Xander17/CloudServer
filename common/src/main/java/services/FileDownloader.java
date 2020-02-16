@@ -11,19 +11,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 
 // TODO: 14.02.2020 прикрутить логсервис вместо sout
 public class FileDownloader {
-    private enum State {
-        IDLE, FILENAME_LENGTH, FILENAME, FILE_LENGTH, FILE_DATA, CHECKSUM, FAIL, SUCCESS
-    }
-
     private final int BUFFER_SIZE = 8192;
-
     private Path rootDir;
     private ByteBuf byteBuf;
-
     private int filenameLen;
     private String filename;
     private long fileLen;
@@ -32,10 +25,11 @@ public class FileDownloader {
     private State state;
     private FileOutputStream out;
     private MessageDigest md;
-
+    private boolean fileNameOnly;
     public FileDownloader(Path rootDir, ByteBuf byteBuf) {
         this.rootDir = rootDir;
         this.byteBuf = byteBuf;
+        this.fileNameOnly = false;
         this.state = State.IDLE;
         startChecksumCounter();
     }
@@ -52,9 +46,22 @@ public class FileDownloader {
             closeFileForWrite();
             state = State.FAIL;
         }
+        return getErrorCode();
+    }
+
+    private int getErrorCode() {
         if (state == State.SUCCESS) return 1;
         else if (state == State.FAIL) return -1;
         else return 0;
+    }
+
+    public String downloadFileName() throws NoEnoughDataException {
+        fileNameOnly = true;
+        state = State.FILENAME_LENGTH;
+        if (download() == 1) {
+            fileNameOnly = false;
+            return filename;
+        } else return null;
     }
 
     private void readFilenameLen() throws NoEnoughDataException {
@@ -69,8 +76,11 @@ public class FileDownloader {
         checkAvailableData(filenameLen);
         filename = byteBuf.readCharSequence(filenameLen, StandardCharsets.UTF_8).toString();
         file = rootDir.resolve(filename);
-        openFileForWrite();
-        state = State.FILE_LENGTH;
+        if (fileNameOnly) state = State.SUCCESS;
+        else {
+            state = State.FILE_LENGTH;
+            openFileForWrite();
+        }
         System.out.println("Checked filename - " + filename);
     }
 
@@ -121,6 +131,7 @@ public class FileDownloader {
         fileLen = 0;
         filename = null;
         file = null;
+        fileNameOnly = false;
         state = State.FILENAME_LENGTH;
         md.reset();
         closeFileForWrite();
@@ -151,5 +162,9 @@ public class FileDownloader {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private enum State {
+        IDLE, FILENAME_LENGTH, FILENAME, FILE_LENGTH, FILE_DATA, CHECKSUM, FAIL, SUCCESS
     }
 }

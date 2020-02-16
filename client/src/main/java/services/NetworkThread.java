@@ -3,7 +3,6 @@ package services;
 import app.ClientInboundHandler;
 import app.Controller;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
@@ -13,14 +12,11 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import settings.GlobalSettings;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.CountDownLatch;
 
 public class NetworkThread extends Thread {
-    private CountDownLatch countDownLatch;
     private Controller controller;
 
-    public NetworkThread(Controller controller, CountDownLatch countDownLatch) {
-        this.countDownLatch = countDownLatch;
+    public NetworkThread(Controller controller) {
         this.controller = controller;
     }
 
@@ -38,7 +34,7 @@ public class NetworkThread extends Thread {
                         }
                     });
             ChannelFuture channelFuture = clientBootstrap.connect().sync();
-            countDownLatch.countDown();
+            controller.setLoginDisable(false);
             channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
             LogService.SERVER.error(e);

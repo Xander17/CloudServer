@@ -6,15 +6,21 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 
 public class ClientStart extends Application {
+
+    public static void main(String[] args) {
+        //new app.Client();
+        launch(args);
+    }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         String DEFAULT_STYLE = "css/client.css";
 
-        Parent root = FXMLLoader.load(getClass().getClassLoader().getResource("fxml/client.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/client.fxml"));
+        Parent root = loader.load();
+        Controller controller = loader.getController();
         primaryStage.setTitle("GB Cloud");
         primaryStage.setScene(new Scene(root, 800, 700));
         primaryStage.setMinWidth(300);
@@ -23,13 +29,8 @@ public class ClientStart extends Application {
         primaryStage.getScene().getStylesheets().add("css/gradient_style.css");
         primaryStage.getScene().getStylesheets().add(DEFAULT_STYLE);
         primaryStage.getIcons().add(new Image("img/icon.png"));
+        primaryStage.setOnCloseRequest(e -> controller.exitApp());
 //        primaryStage.initStyle(StageStyle.UNDECORATED);
         primaryStage.show();
-    }
-
-
-    public static void main(String[] args) {
-        //new app.Client();
-        launch(args);
     }
 }

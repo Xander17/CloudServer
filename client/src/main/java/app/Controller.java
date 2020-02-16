@@ -1,11 +1,11 @@
 package app;
 
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import resources.CommandBytes;
 import resources.LoginRegError;
@@ -14,11 +14,10 @@ import services.LogService;
 import services.NetworkThread;
 
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 import java.util.ResourceBundle;
-import java.util.concurrent.CountDownLatch;
-
-import static resources.LoginRegError.LOGIN_EXISTS;
-import static resources.LoginRegError.RESPONSE_ERROR;
 
 public class Controller implements Initializable {
     @FXML
@@ -28,29 +27,35 @@ public class Controller implements Initializable {
     @FXML
     private Label lblLoginInfo, lblRegInfo;
     @FXML
-    private Button btnLogin, btnReg;
+    private Button btnLogin, btnReg, btnLoginRegSwap;
+    @FXML
+    private Button btnSendAllToServer, btnGetFilesList, btnReceiveAllFromServer;
+    @FXML
+    private ListView<String> listFilesClient, listFilesServer;
+    @FXML
+    private TextArea taLogs;
 
-    private ServerHandler serverHandler;
+    private DataHandler dataHandler;
     private NetworkThread networkThread;
     private int id;
-    private boolean loginState = true;
+    private boolean loginState;
+    private SimpleDateFormat dateFormat;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        loginState = true;
+        dateFormat = new SimpleDateFormat("[HH:mm:ss]");
         runServerListener();
     }
 
-    // TODO: 15.02.2020 посмотреть, почему клиент не отключается после закрытия окна
     private void runServerListener() {
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        networkThread = new NetworkThread(this, countDownLatch);
-        //networkThread.setDaemon(true);
+        networkThread = new NetworkThread(this);
         networkThread.start();
-        try {
-            countDownLatch.await();
-        } catch (InterruptedException e) {
-            LogService.SERVER.error(e);
-        }
+    }
+
+    public void setLoginDisable(boolean status) {
+        btnLogin.setDisable(status);
+        btnLoginRegSwap.setDisable(status);
     }
 
     public void signUp() {
@@ -63,7 +68,7 @@ public class Controller implements Initializable {
         if (!formatChecker.checkLoginFormat(login)) setRegInfo(formatChecker.getCurrentError());
         else if (!formatChecker.checkPasswordFormat(pass)) setRegInfo(formatChecker.getCurrentError());
         else if (!login.isEmpty() && !pass.isEmpty()) {
-            serverHandler.sendRegAuthData(CommandBytes.REG, login, pass);
+            dataHandler.sendRegAuthData(CommandBytes.REG, login, pass);
         } else {
             Platform.runLater(() -> {
                 tfRegLogin.setText(login);
@@ -79,7 +84,7 @@ public class Controller implements Initializable {
         // TODO: 14.02.2020 проверка на соединение
         //if (!isSocketOpen()) setLoginInfo(LoginRegError.NO_CONNECTION);
         if (!login.isEmpty() && !pass.isEmpty()) {
-            serverHandler.sendRegAuthData(CommandBytes.AUTH, login, pass);
+            dataHandler.sendRegAuthData(CommandBytes.AUTH, login, pass);
         } else {
             Platform.runLater(() -> {
                 tfLogin.setText(login);
@@ -99,12 +104,13 @@ public class Controller implements Initializable {
         if (!vBoxLogin.isVisible()) return;
         this.id = id;
         setLoginState(false);
+        refreshFilesList();
     }
 
     public void setRegAuthError(int code) {
         LoginRegError[] errors = LoginRegError.values();
         LoginRegError error;
-        if (code >= errors.length || code < 0) error = RESPONSE_ERROR;
+        if (code >= errors.length || code < 0) error = LoginRegError.RESPONSE_ERROR;
         else error = errors[code];
         if (vBoxLogin.isVisible()) setLoginInfo(error);
         else if (vBoxRegistration.isVisible()) setRegInfo(error);
@@ -120,13 +126,12 @@ public class Controller implements Initializable {
     private void setRegInfo(LoginRegError error) {
         Platform.runLater(() -> {
             lblRegInfo.setText(error.toString());
-            if (error == LOGIN_EXISTS) {
+            if (error == LoginRegError.LOGIN_EXISTS) {
                 tfRegLogin.clear();
                 tfRegLogin.requestFocus();
             }
         });
     }
-
 
     public void passwordFocus() {
         tfPassword.requestFocus();
@@ -162,25 +167,93 @@ public class Controller implements Initializable {
     }
 
     private void setElementsDisable(boolean status) {
-//        Platform.runLater(() -> {
-//            btnSend.setDisable(status);
-//            tfMessage.setDisable(status);
-//            taChat.setDisable(status);
-//            listUsers.setDisable(status);
+        Platform.runLater(() -> {
+            listFilesClient.setDisable(status);
+            listFilesServer.setDisable(status);
+            taLogs.setDisable(status);
 //            mAbout.setDisable(status);
 //            mClear.setDisable(status);
-//            // mSignOut.setDisable(status);
-//        });
+            //mSignOut.setDisable(status);
+        });
     }
 
     private void setElementsVisible(boolean status) {
-//        btnSend.setVisible(status);
-//        tfMessage.setVisible(status);
-//        taChat.setVisible(status);
-//        listUsers.setVisible(status);
+        listFilesClient.setVisible(status);
+        listFilesServer.setVisible(status);
+        btnSendAllToServer.setVisible(status);
+        btnReceiveAllFromServer.setVisible(status);
+        btnGetFilesList.setVisible(status);
+        taLogs.setVisible(status);
     }
 
-    public void setServerHandler(ServerHandler serverHandler) {
-        this.serverHandler = serverHandler;
+    public void setButtonsDisable(boolean status) {
+        btnSendAllToServer.setDisable(status);
+        btnReceiveAllFromServer.setDisable(status);
+    }
+
+    public void setDataHandler(DataHandler dataHandler) {
+        this.dataHandler = dataHandler;
+    }
+
+    public void listClick(MouseEvent mouseEvent) {
+        if (mouseEvent.getClickCount() < 2) return;
+        if (mouseEvent.getSource().equals(listFilesClient)) {
+            addToLog("Double tap Client list");
+            refreshServerList();
+        } else if (mouseEvent.getSource().equals(listFilesServer)) {
+            addToLog("Double tap Server list");
+            refreshClientList();
+        }
+    }
+
+    public void sendAllToServer() {
+
+    }
+
+    public void receiveAllFromServer() {
+
+    }
+
+    public void refreshFilesList() {
+        btnGetFilesList.setDisable(true);
+        setButtonsDisable(true);
+        refreshClientList();
+        refreshServerList();
+        btnGetFilesList.setDisable(false);
+    }
+
+    private void refreshClientList() {
+        List<String> files = dataHandler.getClientFilesList();
+        ObservableList<String> clientList = listFilesClient.getItems();
+        Platform.runLater(() -> {
+            clientList.clear();
+            clientList.addAll(files);
+            addToLog("Client list updated");
+        });
+    }
+
+    private void refreshServerList() {
+        dataHandler.sendFilesListRequest();
+        addToLog("Server list request");
+    }
+
+    public void updateServerList(List<String> serverList) {
+        ObservableList<String> list = listFilesServer.getItems();
+        Platform.runLater(() -> {
+            list.clear();
+            list.addAll(serverList);
+            addToLog("Server list updated");
+        });
+    }
+
+    public void addToLog(String str) {
+        Platform.runLater(() -> taLogs.appendText(dateFormat.format(new Date()) + " " + str + "\n"));
+        LogService.CLIENT.info(str);
+    }
+
+    public void exitApp() {
+        //dataHandler.closeChannel();
+        networkThread.interrupt();
+        Platform.exit();
     }
 }

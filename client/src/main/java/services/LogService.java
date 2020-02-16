@@ -29,6 +29,7 @@ public class LogService {
             logger.error(element);
         }
     }
+
     public void fatal(String... message) {
         String msg = String.join(": ", message);
         logger.fatal(msg);

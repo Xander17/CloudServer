@@ -13,13 +13,13 @@ public class DatabaseSQL {
     private final String USERNAME = "user";
     private final String PASSWORD = "pass";
 
+    private DatabaseSQL() {
+
+    }
+
     public static DatabaseSQL getInstance() {
         if (instance == null) instance = new DatabaseSQL();
         return instance;
-    }
-
-    private DatabaseSQL() {
-
     }
 
     public void connect() {

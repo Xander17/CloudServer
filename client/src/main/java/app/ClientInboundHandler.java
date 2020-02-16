@@ -14,7 +14,7 @@ public class ClientInboundHandler extends ChannelInboundHandlerAdapter {
     private Controller controller;
     private ByteBuf accumulator;
 
-    private ServerHandler serverHandler;
+    private DataHandler serverHandler;
 
     public ClientInboundHandler(Controller controller) {
         this.controller = controller;
@@ -24,7 +24,7 @@ public class ClientInboundHandler extends ChannelInboundHandlerAdapter {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         ByteBufAllocator allocator = ctx.alloc();
         accumulator = allocator.directBuffer(BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
-        serverHandler = new ServerHandler(ctx, accumulator, controller);
+        serverHandler = new DataHandler(ctx, accumulator, controller);
     }
 
     @Override

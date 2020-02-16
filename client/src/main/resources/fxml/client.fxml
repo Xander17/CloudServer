@@ -1,14 +1,42 @@
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.StackPane?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 <BorderPane fx:id="mainPane" xmlns="http://javafx.com/javafx/8.0.999-ea" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="app.Controller">
     <center>
         <StackPane>
+            <BorderPane BorderPane.alignment="center">
+                <left>
+                    <ListView fx:id="listFilesClient" disable="true" onMouseClicked="#listClick" visible="false"
+                              prefWidth="${0.5*mainPane.width}"/>
+                </left>
+                <right>
+                    <ListView fx:id="listFilesServer" disable="true" onMouseClicked="#listClick" visible="false"
+                              prefWidth="${0.5*mainPane.width}"/>
+                </right>
+                <bottom>
+                    <BorderPane>
+                        <left>
+                            <Button fx:id="btnSendAllToServer" disable="true" onAction="#sendAllToServer"
+                                    styleClass="btnNotControl" text="Upload All &gt;&gt;&gt;" visible="false"
+                                    prefWidth="${0.35*mainPane.width}"/>
+                        </left>
+                        <center>
+                            <Button fx:id="btnGetFilesList" onAction="#refreshFilesList"
+                                    styleClass="btnNotControl" text="Refresh files lists" visible="false"
+                                    prefWidth="${0.3*mainPane.width}"/>
+                        </center>
+                        <right>
+                            <Button fx:id="btnReceiveAllFromServer" disable="true" onAction="#receiveAllFromServer"
+                                    styleClass="btnNotControl" text="&lt;&lt;&lt; Download All" visible="false"
+                                    prefWidth="${0.35*mainPane.width}"/>
+                        </right>
+                        <bottom>
+                            <TextArea fx:id="taLogs" prefWidth="${mainPane.width}" prefHeight="${0.15*mainPane.height}"
+                                      disable="true" editable="false" visible="false"/>
+                        </bottom>
+                    </BorderPane>
+                </bottom>
+            </BorderPane>
             <VBox fx:id="vBoxLogin" alignment="CENTER" maxHeight="70.0" maxWidth="250.0" styleClass="dialogWindow">
                 <Label styleClass="lblDialogWindowTitle" text="Sign in" maxWidth="200.0"/>
                 <Label styleClass="lblLoginWindow" text="Login"/>
@@ -17,8 +45,8 @@
                 <PasswordField fx:id="tfPassword" maxWidth="200" onAction="#loginToServer" text="qwerty"/>
                 <Label fx:id="lblLoginInfo" styleClass="lblLoginWindow"/>
                 <Button fx:id="btnLogin" maxWidth="150" onAction="#loginToServer" styleClass="btnNotControl"
-                        text="Sign in"/>
-                <Button maxWidth="150" onAction="#swapLoginReg" styleClass="btnNotControl" text="To sign up ->"/>
+                        text="Sign in" disable="true"/>
+                <Button fx:id="btnLoginRegSwap" maxWidth="150" onAction="#swapLoginReg" styleClass="btnNotControl" text="To sign up ->" disable="true"/>
             </VBox>
             <VBox fx:id="vBoxRegistration" alignment="CENTER" maxHeight="70.0" maxWidth="250.0" visible="false"
                   styleClass="dialogWindow">

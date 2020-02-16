@@ -37,6 +37,10 @@ public class MainServer {
         }
     }
 
+    public static void main(String[] args) {
+        new MainServer();
+    }
+
     private void runDB() {
         db = DatabaseSQL.getInstance();
         db.connect();
@@ -106,9 +110,5 @@ public class MainServer {
 
     public Vector<ClientHandler> getClients() {
         return clients;
-    }
-
-    public static void main(String[] args) {
-        new MainServer();
     }
 }

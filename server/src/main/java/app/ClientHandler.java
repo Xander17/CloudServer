@@ -12,27 +12,23 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ClientHandler {
-
-    private enum State {
-        IDLE, COMMAND_SELECT, AUTH, REG, DOWNLOAD, FILES_LIST;
-    }
 
     private MainServer server;
     private ChannelHandlerContext ctx;
     private ByteBuf byteBuf;
     private String remoteAddress;
     private FileDownloader downloader;
-
     private String login;
     private Integer id;
     private Path rootDir;
     private State state;
     private boolean noEnoughBytes;
-    private byte[] commandData;
+    private CommandPackage commandPackage;
     private boolean logged;
 
     public ClientHandler(MainServer server, ChannelHandlerContext ctx, ByteBuf byteBuf) {
@@ -52,11 +48,17 @@ public class ClientHandler {
     }
 
     private void stateExecute() {
-        if (state == State.IDLE) listenPackageStart();
-        else if (state == State.COMMAND_SELECT) selectCommandState();
-        else if (state == State.REG) reg();
-        else if (state == State.AUTH) auth();
-        else if (state == State.DOWNLOAD && logged) fileDownload();
+        try {
+            if (state == State.IDLE) listenPackageStart();
+            else if (state == State.COMMAND_SELECT) selectCommandState();
+            else if (state == State.REG) reg();
+            else if (state == State.AUTH) auth();
+            else if (state == State.DOWNLOAD && logged) fileDownload();
+        } catch (IOException e) {
+            LogService.SERVER.error(login, e.toString());
+        } catch (NoEnoughDataException e) {
+            noEnoughBytes = true;
+        }
     }
 
     private void listenPackageStart() {
@@ -74,62 +76,50 @@ public class ClientHandler {
         }
     }
 
-    private void selectCommandState() {
+    private void selectCommandState() throws NoEnoughDataException, IOException {
         checkAvailableData(GlobalSettings.COMMAND_DATA_LENGTH + 1);
-        byte b = byteBuf.readByte();
-        if (CommandBytes.AUTH.check(b)) state = State.AUTH;
-        else if (CommandBytes.REG.check(b)) state = State.REG;
-        else if (CommandBytes.FILELIST.check(b) && logged) state = State.FILES_LIST;
+        commandPackage = new CommandPackage(byteBuf);
+        if (CommandBytes.AUTH.check(commandPackage.getCommand())) {
+            state = State.AUTH;
+        } else if (CommandBytes.REG.check(commandPackage.getCommand())) {
+            state = State.REG;
+        } else if (CommandBytes.FILELIST.check(commandPackage.getCommand()) && logged) {
+            sendFilesList();
+        } else {
+            state = State.IDLE;
+        }
+    }
+
+    private void reg() throws NoEnoughDataException {
+        checkAvailableData(commandPackage.getByte(0) + commandPackage.getByte(1));
+        String incomingLogin = byteBuf.readCharSequence(commandPackage.getByte(0), StandardCharsets.UTF_8).toString();
+        String incomingPass = passwordFormat(byteBuf.readCharSequence(commandPackage.getByte(1), StandardCharsets.UTF_8).toString());
+        LogService.AUTH.info("Registration attempt", remoteAddress, "Login", incomingLogin);
+        LoginRegError error = AuthService.registerAndEchoMsg(incomingLogin, incomingPass);
+        if (error == null) {
+            DataSocketWriter.sendCommand(ctx, CommandBytes.REG_OK);
+            LogService.AUTH.info("Registration success", remoteAddress, "Login", incomingLogin);
+        } else sendLoginRegError(error);
+        state = State.IDLE;
+    }
+
+    private void auth() throws NoEnoughDataException, IOException {
+        checkAvailableData(commandPackage.getByte(0) + commandPackage.getByte(1));
+        String incomingLogin = byteBuf.readCharSequence(commandPackage.getByte(0), StandardCharsets.UTF_8).toString();
+        String incomingPass = passwordFormat(byteBuf.readCharSequence(commandPackage.getByte(1), StandardCharsets.UTF_8).toString());
+        LogService.AUTH.info("Auth attempt", remoteAddress, "Login", incomingLogin);
+        id = AuthService.checkLogin(incomingLogin, incomingPass);
+        if (id == null) sendLoginRegError(LoginRegError.INCORRECT_LOGIN_PASS);
+        else if (server.isUserOnline(incomingLogin)) sendLoginRegError(LoginRegError.LOGGED_ALREADY);
         else {
-            state = State.IDLE;
-            return;
+            login = incomingLogin;
+            logged = true;
+            DataSocketWriter.sendCommand(ctx, CommandBytes.AUTH_OK, id);
+            setUserRepo();
+            downloader = new FileDownloader(rootDir, byteBuf);
+            LogService.AUTH.info("Auth success", remoteAddress, "Login", login);
         }
-        commandData = new byte[GlobalSettings.COMMAND_DATA_LENGTH];
-        byteBuf.readBytes(commandData);
-    }
-
-    private void reg() {
-        checkAvailableData(commandData[0] + commandData[1]);
-        try {
-            String incomingLogin = byteBuf.readCharSequence(commandData[0], StandardCharsets.UTF_8).toString();
-            String incomingPass = passwordFormat(byteBuf.readCharSequence(commandData[1], StandardCharsets.UTF_8).toString());
-            LogService.AUTH.info("Registration attempt", remoteAddress, "Login", incomingLogin);
-            LoginRegError error = AuthService.registerAndEchoMsg(incomingLogin, incomingPass);
-            if (error == null) {
-                DataSocketWriter.sendCommand(ctx, CommandBytes.REG_OK);
-                LogService.AUTH.info("Registration success", remoteAddress, "Login", incomingLogin);
-            } else sendLoginRegError(error);
-        } catch (Exception e) {
-            LogService.USERS.fatal(remoteAddress, e.getLocalizedMessage());
-        } finally {
-            state = State.IDLE;
-        }
-    }
-
-    private void auth() {
-        checkAvailableData(commandData[0] + commandData[1]);
-        try {
-            String incomingLogin = byteBuf.readCharSequence(commandData[0], StandardCharsets.UTF_8).toString();
-            String incomingPass = passwordFormat(byteBuf.readCharSequence(commandData[1], StandardCharsets.UTF_8).toString());
-            LogService.AUTH.info("Auth attempt", remoteAddress, "Login", incomingLogin);
-            id = AuthService.checkLogin(incomingLogin, incomingPass);
-            if (id == null) sendLoginRegError(LoginRegError.INCORRECT_LOGIN_PASS);
-            else if (server.isUserOnline(incomingLogin)) sendLoginRegError(LoginRegError.LOGGED_ALREADY);
-            else {
-                login = incomingLogin;
-                logged = true;
-                DataSocketWriter.sendCommand(ctx, CommandBytes.AUTH_OK, id);
-                setUserRepo();
-                downloader = new FileDownloader(rootDir, byteBuf);
-                LogService.AUTH.info("Auth success", remoteAddress, "Login", login);
-            }
-        } catch (IOException e) {
-            LogService.SERVER.error(login, e.toString());
-        } catch (NoEnoughDataException e) {
-            LogService.USERS.fatal(remoteAddress, e.getLocalizedMessage());
-        } finally {
-            state = State.IDLE;
-        }
+        state = State.IDLE;
     }
 
     // TODO: 14.02.2020 переделать на пересылку шифрованного пароля и избавиться от этоого метода
@@ -140,31 +130,34 @@ public class ClientHandler {
                 .replace("'", "\\'");
     }
 
-    private void sendFilesList() throws IOException, NoEnoughDataException, InterruptedException {
-        List<Path> list = Files.list(rootDir).collect(Collectors.toList());
+    private void sendFilesList() throws IOException, NoEnoughDataException {
+        List<Path> list = Files.list(rootDir).sorted(Comparator.naturalOrder()).collect(Collectors.toList());
         DataSocketWriter.sendCommand(ctx, CommandBytes.FILELIST, list.size());
         for (Path file : list) {
-            FileUploader.writeFileInfo(ctx, file);
+            FileUploader.sendFileInfo(ctx, file);
+            System.out.println(file.getFileName().toString());
         }
+        state = State.IDLE;
     }
 
-    private void sendLoginRegError(LoginRegError err) throws NoEnoughDataException {
+    private void sendLoginRegError(LoginRegError err) {
         LogService.AUTH.warn(remoteAddress, err.toString());
         DataSocketWriter.sendCommand(ctx, CommandBytes.ERROR, err.ordinal());
     }
 
-    private void fileDownload() {
-        try {
-            int result = downloader.download();
-            if (result == 1) state = State.IDLE;
-                // TODO: 14.02.2020 обработать ошибку
-            else if (result == -1) {
-                downloader.reset();
-                state = State.IDLE;
-            }
-        } catch (NoEnoughDataException e) {
-            noEnoughBytes = true;
+    private void fileDownload() throws NoEnoughDataException {
+        int result = downloader.download();
+        if (result == 1) state = State.IDLE;
+            // TODO: 14.02.2020 обработать ошибку
+        else if (result == -1) {
+            downloader.reset();
+            state = State.IDLE;
         }
+    }
+
+    private void setUserRepo() throws IOException {
+        rootDir = MainServer.REPOSITORY_ROOT.resolve(login);
+        if (Files.notExists(rootDir)) Files.createDirectory(rootDir);
     }
 
 //        } catch (NoSuchAlgorithmException e) {
@@ -182,21 +175,9 @@ public class ClientHandler {
 //        LogService.USERS.info(login, "Download complete", name);
 //        return true;
 //    }
-//
-//
-//
 
-    private void setUserRepo() throws IOException {
-        rootDir = MainServer.REPOSITORY_ROOT.resolve(login);
-        if (Files.notExists(rootDir)) Files.createDirectory(rootDir);
-    }
-
-    private boolean checkAvailableData(int length) {
-        if (byteBuf.readableBytes() < length) {
-            noEnoughBytes = true;
-            return false;
-        }
-        return true;
+    private void checkAvailableData(int length) throws NoEnoughDataException {
+        if (byteBuf.readableBytes() < length) throw new NoEnoughDataException();
     }
 
     public void closeChannel() {
@@ -205,5 +186,9 @@ public class ClientHandler {
 
     public String getLogin() {
         return login;
+    }
+
+    private enum State {
+        IDLE, COMMAND_SELECT, AUTH, REG, DOWNLOAD
     }
 }

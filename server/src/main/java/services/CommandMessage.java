@@ -2,7 +2,7 @@ package services;
 
 public enum CommandMessage {
     CLOSE_SERVER("close", "Закрыть соединение"),
-    USER_LIST("users","Список пользователей"),
+    USER_LIST("users", "Список пользователей"),
     COMMANDS_LIST("help", "Помощь");
 
     private String message;
@@ -11,6 +11,14 @@ public enum CommandMessage {
     CommandMessage(String message, String description) {
         this.message = message;
         this.description = description;
+    }
+
+    public static boolean isControlMessage(String s) {
+        return s.startsWith("/");
+    }
+
+    public static String getCommand(String string) {
+        return string.replaceFirst("/", "");
     }
 
     public boolean check(String s) {
@@ -27,14 +35,6 @@ public enum CommandMessage {
         else if (message.length() < 9) tabSpaces = "\t\t";
         else tabSpaces = "\t";
         return message + tabSpaces + description;
-    }
-
-    public static boolean isControlMessage(String s) {
-        return s.startsWith("/");
-    }
-
-    public static String getCommand(String string) {
-        return string.replaceFirst("/", "");
     }
 
     @Override

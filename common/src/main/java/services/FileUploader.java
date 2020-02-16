@@ -13,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 
 public class FileUploader {
 
@@ -47,7 +46,18 @@ public class FileUploader {
         if (buf.refCnt() > 0) buf.release();
     }
 
-    public static void writeFileInfo(ChannelHandlerContext ctx, Path file) throws InterruptedException {
+    public static boolean sendFileInfo(ChannelHandlerContext ctx, Path file) {
+        try {
+            writeFileInfo(ctx, file);
+            return true;
+        } catch (InterruptedException e) {
+            System.out.println("Sending file list error");
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static void writeFileInfo(ChannelHandlerContext ctx, Path file) throws InterruptedException {
         ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer();
         byte[] bytes = file.getFileName().toString().getBytes();
         buf.writeShort((short) bytes.length);
