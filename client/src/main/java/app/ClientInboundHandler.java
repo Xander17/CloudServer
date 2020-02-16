@@ -22,8 +22,7 @@ public class ClientInboundHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ByteBufAllocator allocator = ctx.alloc();
-        accumulator = allocator.directBuffer(BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
+        accumulator = ByteBufAllocator.DEFAULT.directBuffer(BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
         serverHandler = new DataHandler(ctx, accumulator, controller);
     }
 
@@ -39,10 +38,12 @@ public class ClientInboundHandler extends ChannelInboundHandlerAdapter {
         if (accumulator.readableBytes() == 0) accumulator.clear();
             // TODO: 14.02.2020 проверить работу слайса
         else if (accumulator.readerIndex() > BUFFER_SLICE_INDEX) accumulator.slice();
+        ((ByteBuf) msg).release();
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         LogService.SERVER.error(cause.toString());
+        cause.printStackTrace();
     }
 }

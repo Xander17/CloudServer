@@ -28,6 +28,7 @@ public class DataHandler {
     private int filesListCount;
     private List<String> filesList;
     private CommandPackage commandPackage;
+
     public DataHandler(ChannelHandlerContext ctx, ByteBuf byteBuf, Controller controller) {
         this.ctx = ctx;
         this.byteBuf = byteBuf;
@@ -51,10 +52,14 @@ public class DataHandler {
     }
 
     private void stateExecute() {
-        if (state == State.IDLE) listenPackageStart();
-        else if (state == State.COMMAND_SELECT) selectCommandState();
-            //else if (state == State.DOWNLOAD && logged) fileDownload();
-        else if (state == State.FILES_LIST && logged) getFilesList();
+        try {
+            if (state == State.IDLE) listenPackageStart();
+            if (state == State.COMMAND_SELECT) selectCommandState();
+            if (state == State.DOWNLOAD && logged) fileDownload();
+            else if (state == State.FILES_LIST && logged) getFilesList();
+        } catch (NoEnoughDataException e) {
+            noEnoughBytes = true;
+        }
     }
 
     private void listenPackageStart() {
@@ -63,6 +68,7 @@ public class DataHandler {
             b = byteBuf.readByte();
             if (logged && CommandBytes.PACKAGE_START.check(b)) {
                 downloader.reset();
+                controller.setButtonsDisable(true);
                 state = State.DOWNLOAD;
                 break;
             } else if (CommandBytes.COMMAND_START.check(b)) {
@@ -81,7 +87,7 @@ public class DataHandler {
             setRegSuccess();
         } else if (CommandBytes.ERROR.check(commandPackage.getCommand())) {
             setRegAuthError();
-        } else if (CommandBytes.FILELIST.check(commandPackage.getCommand()) && logged) {
+        } else if (CommandBytes.FILES_LIST.check(commandPackage.getCommand()) && logged) {
             filesListCount = commandPackage.getInt();
             filesList = new ArrayList<>();
             state = State.FILES_LIST;
@@ -113,19 +119,43 @@ public class DataHandler {
         DataSocketWriter.sendData(ctx, loginBytes, passBytes);
     }
 
+    // TODO: 16.02.2020 перенести в FileUploader после настройки логгера для модуля common
     public void uploadFiles() throws IOException {
         List<Path> files = Files.list(REPOSITORY_DIRECTORY)
                 .sorted(Comparator.naturalOrder())
                 .collect(Collectors.toList());
         for (Path file : files) {
-            System.out.println("Uploading: " + file.getFileName());
-            if (FileUploader.upload(ctx, file)) {
-                LogService.CLIENT.info("File upload success", file.getFileName().toString());
-                System.out.println("File upload success: " + file.getFileName());
-            } else {
-                LogService.CLIENT.info("File upload failed", file.getFileName().toString());
-                System.out.println("File upload failed: " + file.getFileName());
-            }
+            uploadFile(file);
+        }
+    }
+
+    public void uploadFile(String file) {
+        Path path = REPOSITORY_DIRECTORY.resolve(file);
+        uploadFile(path);
+    }
+
+    public void uploadFile(Path file) {
+        System.out.println("Uploading: " + file.getFileName());
+        if (FileUploader.upload(ctx, file)) {
+            LogService.CLIENT.info("File upload success", file.getFileName().toString());
+            System.out.println("File upload success: " + file.getFileName());
+        } else {
+            LogService.CLIENT.info("File upload failed", file.getFileName().toString());
+            System.out.println("File upload failed: " + file.getFileName());
+        }
+    }
+
+    private void fileDownload() throws NoEnoughDataException {
+        int result = downloader.download();
+        if (result == 1) {
+            state = State.IDLE;
+            controller.refreshFilesList(true);
+            controller.setButtonsDisable(false);
+        }
+        // TODO: 14.02.2020 обработать ошибку
+        else if (result == -1) {
+            downloader.reset();
+            state = State.IDLE;
         }
     }
 
@@ -142,24 +172,29 @@ public class DataHandler {
     }
 
     public void sendFilesListRequest() {
-        DataSocketWriter.sendCommand(ctx, CommandBytes.FILELIST);
+        DataSocketWriter.sendCommand(ctx, CommandBytes.FILES_LIST);
     }
 
-    private void getFilesList() {
-        try {
-            while (filesListCount > 0) {
-                String filename = downloader.downloadFileName();
-                filesList.add(filename);
-                filesListCount--;
-            }
-        } catch (NoEnoughDataException e) {
-            noEnoughBytes = true;
+    public void sendAllFilesRequest() {
+        DataSocketWriter.sendCommand(ctx, CommandBytes.FILES);
+    }
+
+    public void sendFileRequest(String filename) {
+        DataSocketWriter.sendCommand(ctx, CommandBytes.FILE);
+        FileUploader.sendFileInfo(ctx, filename);
+    }
+
+    private void getFilesList() throws NoEnoughDataException {
+        while (filesListCount > 0) {
+            String filename = downloader.downloadFileName();
+            filesList.add(filename);
+            filesListCount--;
         }
-        if (filesListCount == 0) {
-            controller.updateServerList(filesList);
-            state = State.IDLE;
-            controller.setButtonsDisable(false);
-        }
+//        if (filesListCount == 0) {
+        controller.updateServerList(filesList);
+        state = State.IDLE;
+        controller.setButtonsDisable(false);
+//        }
     }
 
     private boolean checkAvailableData(int length) {

@@ -6,11 +6,11 @@
         <StackPane>
             <BorderPane BorderPane.alignment="center">
                 <left>
-                    <ListView fx:id="listFilesClient" disable="true" onMouseClicked="#listClick" visible="false"
+                    <ListView fx:id="listFilesClient" disable="true" onMouseClicked="#filesListHandler" visible="false"
                               prefWidth="${0.5*mainPane.width}"/>
                 </left>
                 <right>
-                    <ListView fx:id="listFilesServer" disable="true" onMouseClicked="#listClick" visible="false"
+                    <ListView fx:id="listFilesServer" disable="true" onMouseClicked="#filesListHandler" visible="false"
                               prefWidth="${0.5*mainPane.width}"/>
                 </right>
                 <bottom>

@@ -8,14 +8,14 @@ public enum CommandBytes {
     ERROR((byte) 3),
     REG((byte) 4),
     REG_OK((byte) 5),
-    FILELIST((byte) 6);
+    FILES_LIST((byte) 6),
+    FILES((byte) 7),
+    FILE((byte) 8);
 
     private byte byteNum;
-    private String byteString;
 
     CommandBytes(byte byteNum) {
         this.byteNum = byteNum;
-        this.byteString = new String(new byte[]{byteNum});
     }
 
     // TODO: 16.02.2020 сделано для логирования, возможно нужно будет удалить

@@ -47,8 +47,12 @@ public class FileUploader {
     }
 
     public static boolean sendFileInfo(ChannelHandlerContext ctx, Path file) {
+        return sendFileInfo(ctx, file.getFileName().toString());
+    }
+
+    public static boolean sendFileInfo(ChannelHandlerContext ctx, String filename) {
         try {
-            writeFileInfo(ctx, file);
+            writeFileInfo(ctx, filename);
             return true;
         } catch (InterruptedException e) {
             System.out.println("Sending file list error");
@@ -58,8 +62,12 @@ public class FileUploader {
     }
 
     private static void writeFileInfo(ChannelHandlerContext ctx, Path file) throws InterruptedException {
+        writeFileInfo(ctx, file.getFileName().toString());
+    }
+
+    private static void writeFileInfo(ChannelHandlerContext ctx, String filename) throws InterruptedException {
         ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer();
-        byte[] bytes = file.getFileName().toString().getBytes();
+        byte[] bytes = filename.getBytes();
         buf.writeShort((short) bytes.length);
         buf.writeBytes(bytes);
         ctx.writeAndFlush(buf).sync();

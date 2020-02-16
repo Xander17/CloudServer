@@ -13,6 +13,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 // TODO: 14.02.2020 прикрутить логсервис вместо sout
+
+//            LogService.SERVER.error(login, "Checksum algorithm error", e.toString());
+//            LogService.USERS.error(login, "Checksum algorithm error", e.toString());
+//        LogService.USERS.info(login, "Package start checked");
+//        LogService.USERS.info(login, "Downloading", name);
+//            LogService.USERS.info(login, "Download failed", name);
+//        LogService.USERS.info(login, "Download complete", name);
+
 public class FileDownloader {
     private final int BUFFER_SIZE = 8192;
     private Path rootDir;

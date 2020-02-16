@@ -13,6 +13,7 @@ import services.FormatChecker;
 import services.LogService;
 import services.NetworkThread;
 
+import java.io.IOException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -39,11 +40,13 @@ public class Controller implements Initializable {
     private NetworkThread networkThread;
     private int id;
     private boolean loginState;
+    private boolean dataTransferDisable;
     private SimpleDateFormat dateFormat;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         loginState = true;
+        dataTransferDisable = true;
         dateFormat = new SimpleDateFormat("[HH:mm:ss]");
         runServerListener();
     }
@@ -104,6 +107,7 @@ public class Controller implements Initializable {
         if (!vBoxLogin.isVisible()) return;
         this.id = id;
         setLoginState(false);
+        dataTransferDisable = false;
         refreshFilesList();
     }
 
@@ -178,47 +182,74 @@ public class Controller implements Initializable {
     }
 
     private void setElementsVisible(boolean status) {
-        listFilesClient.setVisible(status);
-        listFilesServer.setVisible(status);
-        btnSendAllToServer.setVisible(status);
-        btnReceiveAllFromServer.setVisible(status);
-        btnGetFilesList.setVisible(status);
-        taLogs.setVisible(status);
+        Platform.runLater(() -> {
+            listFilesClient.setVisible(status);
+            listFilesServer.setVisible(status);
+            btnSendAllToServer.setVisible(status);
+            btnReceiveAllFromServer.setVisible(status);
+            btnGetFilesList.setVisible(status);
+            taLogs.setVisible(status);
+        });
     }
 
     public void setButtonsDisable(boolean status) {
-        btnSendAllToServer.setDisable(status);
-        btnReceiveAllFromServer.setDisable(status);
+        dataTransferDisable = status;
+        Platform.runLater(() -> {
+            btnSendAllToServer.setDisable(status);
+            btnReceiveAllFromServer.setDisable(status);
+            btnGetFilesList.setDisable(status);
+        });
     }
 
     public void setDataHandler(DataHandler dataHandler) {
         this.dataHandler = dataHandler;
     }
 
-    public void listClick(MouseEvent mouseEvent) {
-        if (mouseEvent.getClickCount() < 2) return;
+    public void filesListHandler(MouseEvent mouseEvent) {
+        if (mouseEvent.getClickCount() < 2 || dataTransferDisable) return;
         if (mouseEvent.getSource().equals(listFilesClient)) {
-            addToLog("Double tap Client list");
-            refreshServerList();
+            String file = listFilesClient.getSelectionModel().getSelectedItem();
+            addToLog("Uploading " + file);
+            new Thread(() -> {
+                setButtonsDisable(true);
+                dataHandler.uploadFile(file);
+                refreshServerList();
+                setButtonsDisable(false);
+            }).start();
         } else if (mouseEvent.getSource().equals(listFilesServer)) {
-            addToLog("Double tap Server list");
-            refreshClientList();
+            String file = listFilesServer.getSelectionModel().getSelectedItem();
+            addToLog("Downloading request" + file);
+            dataHandler.sendFileRequest(file);
         }
     }
 
     public void sendAllToServer() {
-
+        new Thread(() -> {
+            try {
+                setButtonsDisable(true);
+                dataHandler.uploadFiles();
+                refreshServerList();
+                setButtonsDisable(false);
+            } catch (IOException e) {
+                LogService.CLIENT.error("Ошибка отправки файлов", e.toString());
+            }
+        }).start();
     }
 
     public void receiveAllFromServer() {
-
+        setButtonsDisable(true);
+        dataHandler.sendAllFilesRequest();
     }
 
     public void refreshFilesList() {
+        refreshFilesList(false);
+    }
+
+    public void refreshFilesList(boolean onlyClient) {
         btnGetFilesList.setDisable(true);
         setButtonsDisable(true);
         refreshClientList();
-        refreshServerList();
+        if (!onlyClient) refreshServerList();
         btnGetFilesList.setDisable(false);
     }
 

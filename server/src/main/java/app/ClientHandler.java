@@ -54,6 +54,7 @@ public class ClientHandler {
             else if (state == State.REG) reg();
             else if (state == State.AUTH) auth();
             else if (state == State.DOWNLOAD && logged) fileDownload();
+            else if (state == State.FILE_REQUEST && logged) resolveFileRequest();
         } catch (IOException e) {
             LogService.SERVER.error(login, e.toString());
         } catch (NoEnoughDataException e) {
@@ -83,8 +84,12 @@ public class ClientHandler {
             state = State.AUTH;
         } else if (CommandBytes.REG.check(commandPackage.getCommand())) {
             state = State.REG;
-        } else if (CommandBytes.FILELIST.check(commandPackage.getCommand()) && logged) {
+        } else if (CommandBytes.FILES_LIST.check(commandPackage.getCommand()) && logged) {
             sendFilesList();
+        } else if (CommandBytes.FILES.check(commandPackage.getCommand()) && logged) {
+            sendAllFiles();
+        } else if (CommandBytes.FILE.check(commandPackage.getCommand()) && logged) {
+            state=State.FILE_REQUEST;
         } else {
             state = State.IDLE;
         }
@@ -130,13 +135,45 @@ public class ClientHandler {
                 .replace("'", "\\'");
     }
 
-    private void sendFilesList() throws IOException, NoEnoughDataException {
+    private void sendFilesList() throws IOException {
         List<Path> list = Files.list(rootDir).sorted(Comparator.naturalOrder()).collect(Collectors.toList());
-        DataSocketWriter.sendCommand(ctx, CommandBytes.FILELIST, list.size());
+        DataSocketWriter.sendCommand(ctx, CommandBytes.FILES_LIST, list.size());
         for (Path file : list) {
             FileUploader.sendFileInfo(ctx, file);
-            System.out.println(file.getFileName().toString());
         }
+        state = State.IDLE;
+    }
+
+    private void sendAllFiles() throws IOException {
+        sendFilesList();
+        sendFiles();
+    }
+
+    // TODO: 16.02.2020 перенести в FileUploader после настройки логгера для модуля common
+    private void sendFiles() throws IOException {
+        List<Path> files = Files.list(rootDir)
+                .sorted(Comparator.naturalOrder())
+                .collect(Collectors.toList());
+        for (Path file : files) {
+            sendFile(file);
+        }
+    }
+
+    private void sendFile(Path file) {
+        System.out.println("Uploading: " + file.getFileName());
+        if (FileUploader.upload(ctx, file)) {
+            LogService.SERVER.info("File upload success", file.getFileName().toString());
+            System.out.println("File upload success: " + file.getFileName());
+        } else {
+            LogService.SERVER.info("File upload failed", file.getFileName().toString());
+            System.out.println("File upload failed: " + file.getFileName());
+        }
+    }
+
+    private void resolveFileRequest() throws NoEnoughDataException {
+        String filename = downloader.downloadFileName();
+        Path file = rootDir.resolve(filename);
+        sendFile(file);
         state = State.IDLE;
     }
 
@@ -160,22 +197,6 @@ public class ClientHandler {
         if (Files.notExists(rootDir)) Files.createDirectory(rootDir);
     }
 
-//        } catch (NoSuchAlgorithmException e) {
-//            LogService.SERVER.error(login, "Checksum algorithm error", e.toString());
-//            LogService.USERS.error(login, "Checksum algorithm error", e.toString());
-//        }
-//
-//    private boolean downloadFile() throws IOException, NoSuchAlgorithmException {
-//        LogService.USERS.info(login, "Package start checked");
-//        LogService.USERS.info(login, "Downloading", name);
-//        if (!downloadFileData(name)) {
-//            LogService.USERS.info(login, "Download failed", name);
-//            return false;
-//        }
-//        LogService.USERS.info(login, "Download complete", name);
-//        return true;
-//    }
-
     private void checkAvailableData(int length) throws NoEnoughDataException {
         if (byteBuf.readableBytes() < length) throw new NoEnoughDataException();
     }
@@ -189,6 +210,6 @@ public class ClientHandler {
     }
 
     private enum State {
-        IDLE, COMMAND_SELECT, AUTH, REG, DOWNLOAD
+        IDLE, COMMAND_SELECT, AUTH, REG, DOWNLOAD,FILE_REQUEST
     }
 }
