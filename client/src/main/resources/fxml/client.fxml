@@ -6,12 +6,18 @@
         <StackPane>
             <BorderPane BorderPane.alignment="center">
                 <left>
-                    <ListView fx:id="listFilesClient" disable="true" onMouseClicked="#filesListHandler" visible="false"
-                              prefWidth="${0.5*mainPane.width}"/>
+                    <VBox fx:id="vBoxListClient" alignment="CENTER" visible="false">
+                        <Label text="Local files" styleClass="lblLoginWindow" prefHeight="0"/>
+                        <ListView fx:id="listFilesClient" disable="true" onMouseClicked="#filesListHandler"
+                                  prefWidth="${0.5*mainPane.width}" prefHeight="${mainPane.height}"/>
+                    </VBox>
                 </left>
                 <right>
-                    <ListView fx:id="listFilesServer" disable="true" onMouseClicked="#filesListHandler" visible="false"
-                              prefWidth="${0.5*mainPane.width}"/>
+                    <VBox fx:id="vBoxListServer" alignment="CENTER" visible="false" prefHeight="${mainPane.width}">
+                        <Label text="Server files" styleClass="lblLoginWindow" prefHeight="0"/>
+                        <ListView fx:id="listFilesServer" disable="true" onMouseClicked="#filesListHandler"
+                                  prefWidth="${0.5*mainPane.width}"  prefHeight="${mainPane.height}"/>
+                    </VBox>
                 </right>
                 <bottom>
                     <BorderPane>
@@ -46,7 +52,8 @@
                 <Label fx:id="lblLoginInfo" styleClass="lblLoginWindow"/>
                 <Button fx:id="btnLogin" maxWidth="150" onAction="#loginToServer" styleClass="btnNotControl"
                         text="Sign in" disable="true"/>
-                <Button fx:id="btnLoginRegSwap" maxWidth="150" onAction="#swapLoginReg" styleClass="btnNotControl" text="To sign up ->" disable="true"/>
+                <Button fx:id="btnLoginRegSwap" maxWidth="150" onAction="#swapLoginReg" styleClass="btnNotControl"
+                        text="To sign up ->" disable="true"/>
             </VBox>
             <VBox fx:id="vBoxRegistration" alignment="CENTER" maxHeight="70.0" maxWidth="250.0" visible="false"
                   styleClass="dialogWindow">

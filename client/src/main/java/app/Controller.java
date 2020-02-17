@@ -35,6 +35,8 @@ public class Controller implements Initializable {
     private ListView<String> listFilesClient, listFilesServer;
     @FXML
     private TextArea taLogs;
+    @FXML
+    private VBox vBoxListClient, vBoxListServer;
 
     private DataHandler dataHandler;
     private NetworkThread networkThread;
@@ -183,8 +185,8 @@ public class Controller implements Initializable {
 
     private void setElementsVisible(boolean status) {
         Platform.runLater(() -> {
-            listFilesClient.setVisible(status);
-            listFilesServer.setVisible(status);
+            vBoxListClient.setVisible(status);
+            vBoxListServer.setVisible(status);
             btnSendAllToServer.setVisible(status);
             btnReceiveAllFromServer.setVisible(status);
             btnGetFilesList.setVisible(status);

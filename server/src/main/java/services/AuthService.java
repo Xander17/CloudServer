@@ -19,7 +19,8 @@ public class AuthService {
                 return result.getInt(1);
             }
         } catch (SQLException e) {
-            LogService.SERVER.error("AuthService", login, pass, Arrays.toString(e.getStackTrace()));
+            LogService.AUTH.error("AuthService", login, pass);
+            LogService.AUTH.error(e);
         }
         return null;
     }
@@ -31,7 +32,8 @@ public class AuthService {
             if (statement.executeUpdate(query) > 0) return null;
             else return LoginRegError.REG_ERROR;
         } catch (SQLException e) {
-            LogService.SERVER.error("AuthService", login, pass, Arrays.toString(e.getStackTrace()));
+            LogService.AUTH.error("AuthService", login, pass);
+            LogService.AUTH.error(e);
             return LoginRegError.DB_ERROR;
         }
     }
