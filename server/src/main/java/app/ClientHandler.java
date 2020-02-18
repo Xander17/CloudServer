@@ -36,6 +36,7 @@ public class ClientHandler {
         this.ctx = ctx;
         this.remoteAddress = ctx.channel().remoteAddress().toString();
         this.byteBuf = byteBuf;
+        this.commandPackage = new CommandPackage(byteBuf);
         this.state = State.IDLE;
         this.logged = false;
     }
@@ -79,7 +80,7 @@ public class ClientHandler {
 
     private void selectCommandState() throws NoEnoughDataException, IOException {
         checkAvailableData(GlobalSettings.COMMAND_DATA_LENGTH + 1);
-        commandPackage = new CommandPackage(byteBuf);
+        commandPackage.load();
         if (CommandBytes.AUTH.check(commandPackage.getCommand())) {
             state = State.AUTH;
         } else if (CommandBytes.REG.check(commandPackage.getCommand())) {
@@ -89,7 +90,7 @@ public class ClientHandler {
         } else if (CommandBytes.FILES.check(commandPackage.getCommand()) && logged) {
             sendAllFiles();
         } else if (CommandBytes.FILE.check(commandPackage.getCommand()) && logged) {
-            state=State.FILE_REQUEST;
+            state = State.FILE_REQUEST;
         } else {
             state = State.IDLE;
         }
@@ -210,6 +211,6 @@ public class ClientHandler {
     }
 
     private enum State {
-        IDLE, COMMAND_SELECT, AUTH, REG, DOWNLOAD,FILE_REQUEST
+        IDLE, COMMAND_SELECT, AUTH, REG, DOWNLOAD, FILE_REQUEST
     }
 }

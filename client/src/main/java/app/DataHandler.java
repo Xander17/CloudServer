@@ -32,6 +32,7 @@ public class DataHandler {
     public DataHandler(ChannelHandlerContext ctx, ByteBuf byteBuf, Controller controller) {
         this.ctx = ctx;
         this.byteBuf = byteBuf;
+        this.commandPackage = new CommandPackage(byteBuf);
         this.controller = controller;
         this.logged = false;
         this.state = State.IDLE;
@@ -78,9 +79,9 @@ public class DataHandler {
         }
     }
 
-    private void selectCommandState() {
+    private void selectCommandState() throws NoEnoughDataException {
         checkAvailableData(GlobalSettings.COMMAND_DATA_LENGTH + 1);
-        commandPackage = new CommandPackage(byteBuf);
+        commandPackage.load();
         if (CommandBytes.AUTH_OK.check(commandPackage.getCommand())) {
             setAuthSuccess();
         } else if (CommandBytes.REG_OK.check(commandPackage.getCommand())) {
@@ -197,12 +198,8 @@ public class DataHandler {
 //        }
     }
 
-    private boolean checkAvailableData(int length) {
-        if (byteBuf.readableBytes() < length) {
-            noEnoughBytes = true;
-            return false;
-        }
-        return true;
+    private void checkAvailableData(int length) throws NoEnoughDataException {
+        if (byteBuf.readableBytes() < length) throw new NoEnoughDataException();
     }
 
     public void closeChannel() {

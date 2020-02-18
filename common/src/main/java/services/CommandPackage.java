@@ -10,8 +10,13 @@ import java.util.Arrays;
 public class CommandPackage {
     byte[] bytes;
     private byte command;
+    private ByteBuf byteBuf;
 
     public CommandPackage(ByteBuf byteBuf) {
+        this.byteBuf = byteBuf;
+    }
+
+    public void load() {
         command = byteBuf.readByte();
         bytes = new byte[GlobalSettings.COMMAND_DATA_LENGTH];
         byteBuf.readBytes(bytes);
