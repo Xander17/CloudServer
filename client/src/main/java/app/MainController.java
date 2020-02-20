@@ -1,13 +1,17 @@
 package app;
 
+import app.controllers.TableFilesLocalController;
+import app.controllers.TableFilesServerController;
 import javafx.application.Platform;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import resources.CommandBytes;
+import resources.FileRepresentation;
 import resources.LoginRegError;
 import services.FormatChecker;
 import services.LogService;
@@ -20,7 +24,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class Controller implements Initializable {
+public class MainController implements Initializable {
+    private static MainController controller;
+
     @FXML
     private VBox vBoxLogin, vBoxRegistration;
     @FXML
@@ -32,11 +38,13 @@ public class Controller implements Initializable {
     @FXML
     private Button btnSendAllToServer, btnGetFilesList, btnReceiveAllFromServer;
     @FXML
-    private ListView<String> listFilesClient, listFilesServer;
-    @FXML
     private TextArea taLogs;
     @FXML
     private VBox vBoxListClient, vBoxListServer;
+    @FXML
+    private TableFilesLocalController tableFilesLocalController;
+    @FXML
+    private TableFilesServerController tableFilesServerController;
 
     private DataHandler dataHandler;
     private NetworkThread networkThread;
@@ -45,11 +53,16 @@ public class Controller implements Initializable {
     private boolean dataTransferDisable;
     private SimpleDateFormat dateFormat;
 
+    public static MainController getInstance() {
+        return controller;
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        dateFormat = new SimpleDateFormat("[HH:mm:ss]");
+        controller = this;
         loginState = true;
         dataTransferDisable = true;
-        dateFormat = new SimpleDateFormat("[HH:mm:ss]");
         runServerListener();
     }
 
@@ -174,8 +187,8 @@ public class Controller implements Initializable {
 
     private void setElementsDisable(boolean status) {
         Platform.runLater(() -> {
-            listFilesClient.setDisable(status);
-            listFilesServer.setDisable(status);
+            vBoxListClient.setDisable(status);
+            vBoxListServer.setDisable(status);
             taLogs.setDisable(status);
 //            mAbout.setDisable(status);
 //            mClear.setDisable(status);
@@ -201,28 +214,6 @@ public class Controller implements Initializable {
             btnReceiveAllFromServer.setDisable(status);
             btnGetFilesList.setDisable(status);
         });
-    }
-
-    public void setDataHandler(DataHandler dataHandler) {
-        this.dataHandler = dataHandler;
-    }
-
-    public void filesListHandler(MouseEvent mouseEvent) {
-        if (mouseEvent.getClickCount() < 2 || dataTransferDisable) return;
-        if (mouseEvent.getSource().equals(listFilesClient)) {
-            String file = listFilesClient.getSelectionModel().getSelectedItem();
-            addToLog("Uploading " + file);
-            new Thread(() -> {
-                setButtonsDisable(true);
-                dataHandler.uploadFile(file);
-                refreshServerList();
-                setButtonsDisable(false);
-            }).start();
-        } else if (mouseEvent.getSource().equals(listFilesServer)) {
-            String file = listFilesServer.getSelectionModel().getSelectedItem();
-            addToLog("Downloading request" + file);
-            dataHandler.sendFileRequest(file);
-        }
     }
 
     public void sendAllToServer() {
@@ -256,27 +247,16 @@ public class Controller implements Initializable {
     }
 
     private void refreshClientList() {
-        List<String> files = dataHandler.getClientFilesList();
-        ObservableList<String> clientList = listFilesClient.getItems();
-        Platform.runLater(() -> {
-            clientList.clear();
-            clientList.addAll(files);
-            addToLog("Client list updated");
-        });
+        tableFilesLocalController.update();
     }
 
-    private void refreshServerList() {
+    public void refreshServerList() {
         dataHandler.sendFilesListRequest();
         addToLog("Server list request");
     }
 
-    public void updateServerList(List<String> serverList) {
-        ObservableList<String> list = listFilesServer.getItems();
-        Platform.runLater(() -> {
-            list.clear();
-            list.addAll(serverList);
-            addToLog("Server list updated");
-        });
+    public void updateServerList(List<FileRepresentation> serverList) {
+        tableFilesServerController.update(serverList);
     }
 
     public void addToLog(String str) {
@@ -285,8 +265,23 @@ public class Controller implements Initializable {
     }
 
     public void exitApp() {
-        //dataHandler.closeChannel();
         networkThread.interrupt();
         Platform.exit();
+    }
+
+    public DataHandler getDataHandler() {
+        return dataHandler;
+    }
+
+    public void setDataHandler(DataHandler dataHandler) {
+        this.dataHandler = dataHandler;
+    }
+
+    public boolean isDataTransferDisable() {
+        return dataTransferDisable;
+    }
+
+    public void setDataTransferDisable(boolean dataTransferDisable) {
+        this.dataTransferDisable = dataTransferDisable;
     }
 }

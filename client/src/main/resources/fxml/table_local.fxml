@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<TableView xmlns:fx="http://javafx.com/fxml"
+           xmlns="http://javafx.com/javafx"
+           fx:controller="app.controllers.TableFilesLocalController"
+           fx:id="tableFilesLocal" onMouseClicked="#onClick">
+    <placeholder>
+        <Label text="No files in local directory"/>
+    </placeholder>
+    <columns>
+        <TableColumn text="File name" fx:id="colFileNameLocal" sortable="false"
+                     prefWidth="${0.5*tableFilesLocal.width}"/>
+        <TableColumn text="Size" fx:id="colFileSizeLocal" sortable="false"/>
+        <TableColumn text="Last edited" fx:id="colFileDateLocal" sortable="false"
+                     prefWidth="${0.29*tableFilesLocal.width}"/>
+    </columns>
+</TableView>

@@ -1,7 +1,7 @@
 package services;
 
 import app.ClientInboundHandler;
-import app.Controller;
+import app.MainController;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -14,9 +14,9 @@ import settings.GlobalSettings;
 import java.net.InetSocketAddress;
 
 public class NetworkThread extends Thread {
-    private Controller controller;
+    private MainController controller;
 
-    public NetworkThread(Controller controller) {
+    public NetworkThread(MainController controller) {
         this.controller = controller;
     }
 

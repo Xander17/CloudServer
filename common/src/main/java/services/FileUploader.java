@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 public class FileUploader {
 
@@ -42,56 +43,46 @@ public class FileUploader {
     private static void writeFileStartByte(ChannelHandlerContext ctx) throws InterruptedException {
         ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer();
         buf.writeByte(CommandBytes.PACKAGE_START.getByte());
-        ctx.writeAndFlush(buf).sync();
-        if (buf.refCnt() > 0) buf.release();
+        ctx.writeAndFlush(buf);
     }
 
-    public static boolean sendFileInfo(ChannelHandlerContext ctx, Path file) {
-        return sendFileInfo(ctx, file.getFileName().toString());
+    public static void sendFileInfo(ChannelHandlerContext ctx, String filename) throws IOException {
+        writeFileInfo(ctx, filename, 0L, 0L);
     }
 
-    public static boolean sendFileInfo(ChannelHandlerContext ctx, String filename) {
-        try {
-            writeFileInfo(ctx, filename);
-            return true;
-        } catch (InterruptedException e) {
-            System.out.println("Sending file list error");
-            e.printStackTrace();
-            return false;
-        }
+    public static void sendFileInfo(ChannelHandlerContext ctx, Path file) throws IOException {
+        writeFileInfo(ctx, file);
     }
 
-    private static void writeFileInfo(ChannelHandlerContext ctx, Path file) throws InterruptedException {
-        writeFileInfo(ctx, file.getFileName().toString());
+    private static void writeFileInfo(ChannelHandlerContext ctx, Path file) throws IOException {
+        writeFileInfo(ctx, file.getFileName().toString(), Files.size(file), Files.getLastModifiedTime(file).toMillis());
     }
 
-    private static void writeFileInfo(ChannelHandlerContext ctx, String filename) throws InterruptedException {
+    private static void writeFileInfo(ChannelHandlerContext ctx, String filename, long fileLength, long fileDate) throws IOException {
         ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer();
         byte[] bytes = filename.getBytes();
         buf.writeShort((short) bytes.length);
         buf.writeBytes(bytes);
-        ctx.writeAndFlush(buf).sync();
-        if (buf.refCnt() > 0) buf.release();
+        buf.writeLong(fileLength);
+        buf.writeLong(fileDate);
+        ctx.writeAndFlush(buf);
     }
 
     private static void writeFileData(ChannelHandlerContext ctx, Path file) throws NoSuchAlgorithmException, IOException, InterruptedException {
         MessageDigest md = MessageDigest.getInstance(GlobalSettings.CHECKSUM_PROTOCOL);
         ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer();
-        buf.writeLong(Files.size(file));
         byte[] bytes = new byte[BUFFER_SIZE];
         BufferedInputStream in = new BufferedInputStream(new FileInputStream(file.toFile()));
-        int n;
-        while ((n = in.read(bytes)) != -1) {
+        int blockSize;
+        while ((blockSize = in.read(bytes)) != -1) {
             buf.retain();
-            buf.writeBytes(bytes, 0, n);
-            md.update(bytes, 0, n);
+            buf.writeBytes(bytes, 0, blockSize);
+            md.update(bytes, 0, blockSize);
             ctx.writeAndFlush(buf).sync();
             buf.clear();
         }
-        buf.retain();
         buf.writeBytes(md.digest(), 0, GlobalSettings.CHECKSUM_LENGTH);
-        ctx.writeAndFlush(buf).sync();
-        if (buf.refCnt() > 0) buf.release();
+        ctx.writeAndFlush(buf);
         in.close();
     }
 }

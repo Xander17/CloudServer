@@ -4,6 +4,7 @@ import exceptions.NoEnoughDataException;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import resources.CommandBytes;
+import resources.FileRepresentation;
 import services.*;
 import settings.GlobalSettings;
 
@@ -20,16 +21,16 @@ public class DataHandler {
     private final Path REPOSITORY_DIRECTORY = Paths.get("client-repo");
     private ChannelHandlerContext ctx;
     private ByteBuf byteBuf;
-    private Controller controller;
+    private MainController controller;
     private FileDownloader downloader;
     private State state;
     private boolean noEnoughBytes;
     private boolean logged;
     private int filesListCount;
-    private List<String> filesList;
+    private List<FileRepresentation> filesList;
     private CommandPackage commandPackage;
 
-    public DataHandler(ChannelHandlerContext ctx, ByteBuf byteBuf, Controller controller) {
+    public DataHandler(ChannelHandlerContext ctx, ByteBuf byteBuf, MainController controller) {
         this.ctx = ctx;
         this.byteBuf = byteBuf;
         this.commandPackage = new CommandPackage(byteBuf);
@@ -172,6 +173,18 @@ public class DataHandler {
         }
     }
 
+    public List<FileRepresentation> getClientFilesRepList() {
+        try {
+            return Files.list(REPOSITORY_DIRECTORY)
+                    .sorted(Comparator.naturalOrder())
+                    .map(FileRepresentation::new)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            LogService.CLIENT.error("Error while getting files list", e.toString());
+            return null;
+        }
+    }
+
     public void sendFilesListRequest() {
         DataSocketWriter.sendCommand(ctx, CommandBytes.FILES_LIST);
     }
@@ -181,30 +194,27 @@ public class DataHandler {
     }
 
     public void sendFileRequest(String filename) {
-        DataSocketWriter.sendCommand(ctx, CommandBytes.FILE);
-        FileUploader.sendFileInfo(ctx, filename);
+        try {
+            DataSocketWriter.sendCommand(ctx, CommandBytes.FILE);
+            FileUploader.sendFileInfo(ctx, filename);
+        } catch (IOException e) {
+            LogService.SERVER.error(e);
+        }
     }
 
     private void getFilesList() throws NoEnoughDataException {
         while (filesListCount > 0) {
-            String filename = downloader.downloadFileName();
-            filesList.add(filename);
+            FileRepresentation file = downloader.downloadFileInfo();
+            filesList.add(file);
             filesListCount--;
         }
-//        if (filesListCount == 0) {
         controller.updateServerList(filesList);
         state = State.IDLE;
         controller.setButtonsDisable(false);
-//        }
     }
 
     private void checkAvailableData(int length) throws NoEnoughDataException {
         if (byteBuf.readableBytes() < length) throw new NoEnoughDataException();
-    }
-
-    public void closeChannel() {
-        //ctx.close();
-        ctx.channel().close();
     }
 
     private enum State {

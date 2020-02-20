@@ -172,7 +172,7 @@ public class ClientHandler {
     }
 
     private void resolveFileRequest() throws NoEnoughDataException {
-        String filename = downloader.downloadFileName();
+        String filename = downloader.downloadFileInfo().getName();
         Path file = rootDir.resolve(filename);
         sendFile(file);
         state = State.IDLE;

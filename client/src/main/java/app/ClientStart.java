@@ -10,7 +10,6 @@ import javafx.stage.Stage;
 public class ClientStart extends Application {
 
     public static void main(String[] args) {
-        //new app.Client();
         launch(args);
     }
 
@@ -20,9 +19,9 @@ public class ClientStart extends Application {
 
         FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("fxml/client.fxml"));
         Parent root = loader.load();
-        Controller controller = loader.getController();
+        MainController controller = loader.getController();
         primaryStage.setTitle("GB Cloud");
-        primaryStage.setScene(new Scene(root, 800, 700));
+        primaryStage.setScene(new Scene(root, 900, 700));
         primaryStage.setMinWidth(300);
         primaryStage.setMinHeight(300);
         primaryStage.getScene().getStylesheets().add("css/base_style.css");

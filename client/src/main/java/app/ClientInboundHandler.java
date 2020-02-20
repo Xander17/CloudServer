@@ -11,12 +11,12 @@ public class ClientInboundHandler extends ChannelInboundHandlerAdapter {
     private int BUFFER_MAX_SIZE = 1024 * 1024 * 5;
     private int BUFFER_SLICE_INDEX = 1024 * 1024;
 
-    private Controller controller;
+    private MainController controller;
     private ByteBuf accumulator;
 
     private DataHandler serverHandler;
 
-    public ClientInboundHandler(Controller controller) {
+    public ClientInboundHandler(MainController controller) {
         this.controller = controller;
     }
 

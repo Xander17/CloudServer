@@ -1,22 +1,24 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<BorderPane fx:id="mainPane" xmlns="http://javafx.com/javafx/8.0.999-ea" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="app.Controller">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:id="mainPane" xmlns="http://javafx.com/javafx/8.0.999-ea"
+            fx:controller="app.MainController">
     <center>
         <StackPane>
             <BorderPane BorderPane.alignment="center">
                 <left>
-                    <VBox fx:id="vBoxListClient" alignment="CENTER" visible="false">
+                    <VBox fx:id="vBoxListClient" alignment="CENTER" visible="false" prefHeight="${mainPane.height}"
+                          prefWidth="${0.5*mainPane.width}" disable="true">
                         <Label text="Local files" styleClass="lblLoginWindow" prefHeight="0"/>
-                        <ListView fx:id="listFilesClient" disable="true" onMouseClicked="#filesListHandler"
-                                  prefWidth="${0.5*mainPane.width}" prefHeight="${mainPane.height}"/>
+                        <fx:include source="table_local.fxml" fx:id="tableFilesLocal" prefWidth="${0.5*mainPane.width}"
+                                    prefHeight="${mainPane.height}"/>
                     </VBox>
                 </left>
                 <right>
-                    <VBox fx:id="vBoxListServer" alignment="CENTER" visible="false" prefHeight="${mainPane.width}">
+                    <VBox fx:id="vBoxListServer" alignment="CENTER" visible="false" prefHeight="${mainPane.height}"
+                          prefWidth="${0.5*mainPane.width}" disable="true">
                         <Label text="Server files" styleClass="lblLoginWindow" prefHeight="0"/>
-                        <ListView fx:id="listFilesServer" disable="true" onMouseClicked="#filesListHandler"
-                                  prefWidth="${0.5*mainPane.width}"  prefHeight="${mainPane.height}"/>
+                        <fx:include source="table_server.fxml" fx:id="tableFilesServer"
+                                    prefWidth="${0.5*mainPane.width}" prefHeight="${mainPane.height}"/>
                     </VBox>
                 </right>
                 <bottom>
@@ -37,8 +39,8 @@
                                     prefWidth="${0.35*mainPane.width}"/>
                         </right>
                         <bottom>
-                            <TextArea fx:id="taLogs" prefWidth="${mainPane.width}" prefHeight="${0.15*mainPane.height}"
-                                      disable="true" editable="false" visible="false"/>
+                            <TextArea fx:id="taLogs" disable="true" visible="false" editable="false"
+                                      prefHeight="${0.15*mainPane.height}" prefWidth="${mainPane.width}"/>
                         </bottom>
                     </BorderPane>
                 </bottom>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<TableView xmlns:fx="http://javafx.com/fxml"
+           xmlns="http://javafx.com/javafx"
+           fx:controller="app.controllers.TableFilesServerController"
+           fx:id="tableFilesServer" onMouseClicked="#onClick">
+    <placeholder>
+        <Label text="No files on server"/>
+    </placeholder>
+    <columns>
+        <TableColumn text="File name" fx:id="colFileNameServer" sortable="false"
+                     prefWidth="${0.5*tableFilesServer.width}"/>
+        <TableColumn text="Size" fx:id="colFileSizeServer" sortable="false"/>
+        <TableColumn text="Uploaded date" fx:id="colFileDateServer" sortable="false"
+                     prefWidth="${0.29*tableFilesServer.width}"/>
+    </columns>
+</TableView>

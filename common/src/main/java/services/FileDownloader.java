@@ -2,6 +2,7 @@ package services;
 
 import exceptions.NoEnoughDataException;
 import io.netty.buffer.ByteBuf;
+import resources.FileRepresentation;
 import settings.GlobalSettings;
 
 import java.io.FileOutputStream;
@@ -27,26 +28,29 @@ public class FileDownloader {
     private ByteBuf byteBuf;
     private int filenameLen;
     private String filename;
+    private long fileDate;
     private long fileLen;
     private Path file;
     private byte[] checksum;
     private State state;
     private FileOutputStream out;
     private MessageDigest md;
-    private boolean fileNameOnly;
+    private boolean fileInfoOnly;
+    private byte[] readBytes;
+
     public FileDownloader(Path rootDir, ByteBuf byteBuf) {
         this.rootDir = rootDir;
         this.byteBuf = byteBuf;
-        this.fileNameOnly = false;
+        this.fileInfoOnly = false;
         this.state = State.IDLE;
+        this.readBytes = new byte[BUFFER_SIZE];
         startChecksumCounter();
     }
 
     public int download() throws NoEnoughDataException {
         try {
             if (state == State.FILENAME_LENGTH) readFilenameLen();
-            if (state == State.FILENAME) readFilename();
-            if (state == State.FILE_LENGTH) readFileLen();
+            if (state == State.FILE_INFO) readFilename();
             if (state == State.FILE_DATA) downloadFileData();
             if (state == State.CHECKSUM) readChecksum();
         } catch (IOException e) {
@@ -63,12 +67,12 @@ public class FileDownloader {
         else return 0;
     }
 
-    public String downloadFileName() throws NoEnoughDataException {
-        fileNameOnly = true;
+    public FileRepresentation downloadFileInfo() throws NoEnoughDataException {
+        fileInfoOnly = true;
         state = State.FILENAME_LENGTH;
         if (download() == 1) {
-            fileNameOnly = false;
-            return filename;
+            fileInfoOnly = false;
+            return new FileRepresentation(filename, fileLen, fileDate);
         } else return null;
     }
 
@@ -76,42 +80,38 @@ public class FileDownloader {
         checkAvailableData(Short.BYTES);
         filenameLen = byteBuf.readShort();
         if (filenameLen <= 0) state = State.FAIL;
-        else state = State.FILENAME;
+        else state = State.FILE_INFO;
         System.out.println("Checked filename len - " + filenameLen);
     }
 
     private void readFilename() throws NoEnoughDataException, IOException {
-        checkAvailableData(filenameLen);
+        checkAvailableData(filenameLen + 2 * Long.BYTES);
         filename = byteBuf.readCharSequence(filenameLen, StandardCharsets.UTF_8).toString();
         file = rootDir.resolve(filename);
-        if (fileNameOnly) state = State.SUCCESS;
-        else {
-            state = State.FILE_LENGTH;
-            openFileForWrite();
-        }
-        System.out.println("Checked filename - " + filename);
-    }
-
-    private void readFileLen() throws NoEnoughDataException {
-        checkAvailableData(Long.BYTES);
         fileLen = byteBuf.readLong();
-        if (filenameLen <= 0) state = State.FAIL;
+        if (filenameLen < 0) {
+            state = State.FAIL;
+            return;
+        }
+        fileDate = byteBuf.readLong();
+        if (fileInfoOnly) state = State.SUCCESS;
         else {
             state = State.FILE_DATA;
             System.out.println("Downloading");
+            openFileForWrite();
         }
+        System.out.println("Checked filename - " + filename);
         System.out.println("Checked file len - " + fileLen);
     }
 
     private void downloadFileData() throws NoEnoughDataException, IOException {
-        byte[] bytes = new byte[BUFFER_SIZE];
         while (fileLen > 0) {
             int blockSize = fileLen >= BUFFER_SIZE ? BUFFER_SIZE : (int) fileLen;
             checkAvailableData(1);
             if (byteBuf.readableBytes() < blockSize) blockSize = byteBuf.readableBytes();
-            byteBuf.readBytes(bytes, 0, blockSize);
-            out.write(bytes, 0, blockSize);
-            md.update(bytes, 0, blockSize);
+            byteBuf.readBytes(readBytes, 0, blockSize);
+            out.write(readBytes, 0, blockSize);
+            md.update(readBytes, 0, blockSize);
             fileLen -= blockSize;
         }
         checksum = md.digest();
@@ -139,8 +139,9 @@ public class FileDownloader {
         fileLen = 0;
         filename = null;
         file = null;
-        fileNameOnly = false;
+        fileInfoOnly = false;
         state = State.FILENAME_LENGTH;
+        readBytes = new byte[BUFFER_SIZE];
         md.reset();
         closeFileForWrite();
     }
@@ -151,8 +152,6 @@ public class FileDownloader {
 
     // TODO: 15.02.2020 нужна проверка контрольной суммы на сервере, чтобы не закачивать файл повторно
     private void openFileForWrite() throws IOException {
-//        Files.deleteIfExists(file);
-//        Files.createFile(file);
         out = new FileOutputStream(file.toFile());
     }
 
@@ -173,6 +172,6 @@ public class FileDownloader {
     }
 
     private enum State {
-        IDLE, FILENAME_LENGTH, FILENAME, FILE_LENGTH, FILE_DATA, CHECKSUM, FAIL, SUCCESS
+        IDLE, FILENAME_LENGTH, FILE_INFO, FILE_DATA, CHECKSUM, FAIL, SUCCESS
     }
 }
