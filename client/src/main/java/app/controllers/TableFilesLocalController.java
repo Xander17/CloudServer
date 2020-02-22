@@ -38,10 +38,15 @@ public class TableFilesLocalController extends TableViewController {
     public void update() {
         List<FileRepresentation> files = NetworkForGUIAdapter.getInstance().getClientFilesList();
         ObservableList<FileRepresentation> list = tableFilesLocal.getItems();
-        Platform.runLater(() -> {
-            list.clear();
-            list.addAll(files);
-            getMainController().addToLog("Client list updated");
-        });
+        if (files.size() == 0) {
+            getMainController().addToLog("No files in local directory");
+            Platform.runLater(list::clear);
+        } else {
+            Platform.runLater(() -> {
+                list.clear();
+                list.addAll(files);
+                getMainController().addToLog("Client list updated");
+            });
+        }
     }
 }

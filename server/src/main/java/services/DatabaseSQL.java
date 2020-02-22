@@ -1,6 +1,12 @@
 package services;
 
-import java.sql.*;
+import resources.ServerSettings;
+import services.settings.Settings;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class DatabaseSQL {
 
@@ -9,12 +15,18 @@ public class DatabaseSQL {
     private static Connection connection;
     private static Statement statement;
 
-    private final String CONNECTION_STRING = "jdbc:mysql://localhost:3306/cloud_server?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
-    private final String USERNAME = "user";
-    private final String PASSWORD = "pass";
+    private String connectionString;
+    private String username;
+    private String pass;
 
     private DatabaseSQL() {
-
+        String host = Settings.get(ServerSettings.DATABASE_HOST);
+        String port = Settings.get(ServerSettings.DATABASE_PORT);
+        String name = Settings.get(ServerSettings.DATABASE_NAME);
+        String settings = Settings.get(ServerSettings.DATABASE_SETTINGS_STRING);
+        username = Settings.get(ServerSettings.DATABASE_USERNAME);
+        pass = Settings.get(ServerSettings.DATABASE_PASS);
+        connectionString = String.format("jdbc:mysql://%s:%s/%s?%s", host, port, name, settings);
     }
 
     public static DatabaseSQL getInstance() {
@@ -24,7 +36,7 @@ public class DatabaseSQL {
 
     public void connect() {
         try {
-            connection = DriverManager.getConnection(CONNECTION_STRING, USERNAME, PASSWORD);
+            connection = DriverManager.getConnection(connectionString, username, pass);
             statement = connection.createStatement();
             checkTablesExist();
             LogService.SERVER.info("Clients DB connected.");
@@ -54,17 +66,5 @@ public class DatabaseSQL {
 
     public Statement getStatement() {
         return statement;
-    }
-
-    public PreparedStatement getPreparedStatement(String query) throws SQLException {
-        return connection.prepareStatement(query);
-    }
-
-    public void closePreparedStatement(PreparedStatement preparedStatement) {
-        try {
-            if (preparedStatement != null) preparedStatement.close();
-        } catch (SQLException e) {
-            LogService.SERVER.error("DB", e.toString());
-        }
     }
 }

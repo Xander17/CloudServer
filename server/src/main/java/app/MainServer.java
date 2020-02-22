@@ -6,9 +6,12 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import services.ConsoleHandler;
+import resources.ServerSettings;
+import services.console.ConsoleHandler;
 import services.DatabaseSQL;
 import services.LogService;
+import services.LogServiceCommon;
+import services.settings.Settings;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,27 +21,32 @@ import java.util.Vector;
 
 public class MainServer {
 
-    public static final Path REPOSITORY_ROOT = Paths.get("server-repo");
     private DatabaseSQL db;
     private ChannelFuture channelFuture;
+    private Path rootDir;
 
     private Vector<ClientHandler> clients = new Vector<>();
 
+    public static void main(String[] args) {
+        new MainServer();
+    }
+
     public MainServer() {
         try {
+            setSettings();
             runDB();
             checkRepositoryExists();
             new ConsoleHandler(this);
             runServer();
-        } catch (IOException e) {
-            LogService.SERVER.error(e.toString());
-        } catch (InterruptedException e) {
-            LogService.SERVER.error(e.toString());
+        } catch (IOException | InterruptedException e) {
+            LogService.SERVER.error(e);
         }
     }
 
-    public static void main(String[] args) {
-        new MainServer();
+    private void setSettings() {
+        LogServiceCommon.setAppendConsole(true);
+        Settings.load("server.cfg", ServerSettings.getSettings());
+        rootDir = Paths.get(Settings.get(ServerSettings.ROOT_DIRECTORY));
     }
 
     private void runDB() {
@@ -47,7 +55,7 @@ public class MainServer {
     }
 
     private void checkRepositoryExists() throws IOException {
-        if (Files.notExists(REPOSITORY_ROOT)) Files.createDirectory(REPOSITORY_ROOT);
+        if (Files.notExists(rootDir)) Files.createDirectory(rootDir);
     }
 
     private void runServer() throws InterruptedException {
@@ -110,5 +118,9 @@ public class MainServer {
 
     public Vector<ClientHandler> getClients() {
         return clients;
+    }
+
+    public Path getRootDir() {
+        return rootDir;
     }
 }

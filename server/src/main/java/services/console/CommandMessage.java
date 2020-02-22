@@ -1,4 +1,4 @@
-package services;
+package services.console;
 
 public enum CommandMessage {
     CLOSE_SERVER("close", "Закрыть соединение"),

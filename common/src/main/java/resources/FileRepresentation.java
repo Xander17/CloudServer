@@ -2,6 +2,7 @@ package resources;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import services.LogServiceCommon;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,7 +21,7 @@ public class FileRepresentation {
             this.length = new SimpleStringProperty(getStringLength(Files.size(path)));
             this.date = new SimpleStringProperty(getFormattedDate(Files.getLastModifiedTime(path).toMillis()));
         } catch (IOException e) {
-            //LogService.CLIENT.error(path.toString(), path.getFileName().toString(), e.toString());
+            LogServiceCommon.APP.error("File representation creation error", path.toString(), path.getFileName().toString(), e.toString());
         }
     }
 
@@ -76,5 +77,10 @@ public class FileRepresentation {
 
     public StringProperty dateProperty() {
         return date;
+    }
+
+    @Override
+    public String toString() {
+        return name.get();
     }
 }

@@ -1,7 +1,8 @@
-package services;
+package services.console;
 
 import app.ClientHandler;
 import app.MainServer;
+import services.LogService;
 
 import java.io.BufferedReader;
 import java.io.IOException;

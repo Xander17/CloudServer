@@ -1,9 +1,10 @@
-package services;
+package services.transfer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import resources.CommandBytes;
+import services.LogServiceCommon;
 import settings.GlobalSettings;
 
 import java.io.BufferedInputStream;
@@ -13,10 +14,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 
 public class FileUploader {
-
+    
+    // TODO: 24.02.2020 добавить в настройки 
     private static int BUFFER_SIZE = 8192;
 
     public static boolean upload(ChannelHandlerContext ctx, Path file) {
@@ -25,28 +26,28 @@ public class FileUploader {
             writeFileInfo(ctx, file);
             writeFileData(ctx, file);
         } catch (InterruptedException e) {
-            System.out.println("Upload error");
-            e.printStackTrace();
+            LogServiceCommon.TRANSFER.error("Upload error - " + file.getFileName().toString());
+            LogServiceCommon.TRANSFER.error(e);
             return false;
         } catch (NoSuchAlgorithmException e) {
-            System.out.println("Checksum calculation error");
-            e.printStackTrace();
+            LogServiceCommon.TRANSFER.error("Checksum calculation error - " + file.getFileName().toString());
+            LogServiceCommon.TRANSFER.error(e);
             return false;
         } catch (IOException e) {
-            System.out.println("File read error");
-            e.printStackTrace();
+            LogServiceCommon.TRANSFER.error("File read error - " + file.getFileName().toString());
+            LogServiceCommon.TRANSFER.error(e);
             return false;
         }
         return true;
     }
 
-    private static void writeFileStartByte(ChannelHandlerContext ctx) throws InterruptedException {
+    private static void writeFileStartByte(ChannelHandlerContext ctx){
         ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer();
         buf.writeByte(CommandBytes.PACKAGE_START.getByte());
         ctx.writeAndFlush(buf);
     }
 
-    public static void sendFileInfo(ChannelHandlerContext ctx, String filename) throws IOException {
+    public static void sendFileInfo(ChannelHandlerContext ctx, String filename){
         writeFileInfo(ctx, filename, 0L, 0L);
     }
 
@@ -58,7 +59,7 @@ public class FileUploader {
         writeFileInfo(ctx, file.getFileName().toString(), Files.size(file), Files.getLastModifiedTime(file).toMillis());
     }
 
-    private static void writeFileInfo(ChannelHandlerContext ctx, String filename, long fileLength, long fileDate) throws IOException {
+    private static void writeFileInfo(ChannelHandlerContext ctx, String filename, long fileLength, long fileDate){
         ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer();
         byte[] bytes = filename.getBytes();
         buf.writeShort((short) bytes.length);

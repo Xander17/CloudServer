@@ -1,7 +1,8 @@
-package services;
+package services.transfer;
 
 import io.netty.buffer.ByteBuf;
 import resources.CommandBytes;
+import services.LogServiceCommon;
 import settings.GlobalSettings;
 
 import java.nio.ByteBuffer;
@@ -25,7 +26,10 @@ public class CommandPackage {
     }
 
     public byte getByte(int i) {
-        if (i < 0 || i > GlobalSettings.COMMAND_DATA_LENGTH) throw new IllegalArgumentException();
+        if (i < 0 || i > GlobalSettings.COMMAND_DATA_LENGTH) {
+            LogServiceCommon.APP.error("Illegal argument in getByte of CommandPackage - " + i);
+            throw new IllegalArgumentException();
+        }
         return bytes[i];
     }
 

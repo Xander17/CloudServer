@@ -1,8 +1,9 @@
-package services;
+package services.transfer;
 
 import exceptions.NoEnoughDataException;
 import io.netty.buffer.ByteBuf;
 import resources.FileRepresentation;
+import services.LogServiceCommon;
 import settings.GlobalSettings;
 
 import java.io.FileOutputStream;
@@ -12,17 +13,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 // TODO: 14.02.2020 прикрутить логсервис вместо sout
 
-//            LogService.SERVER.error(login, "Checksum algorithm error", e.toString());
-//            LogService.USERS.error(login, "Checksum algorithm error", e.toString());
-//        LogService.USERS.info(login, "Package start checked");
-//        LogService.USERS.info(login, "Downloading", name);
-//            LogService.USERS.info(login, "Download failed", name);
-//        LogService.USERS.info(login, "Download complete", name);
-
 public class FileDownloader {
+    private final String FILENAME_PATTERN = "^[.\\w\\p{L}~@#$%^\\-_(){}'` ]+$";
+
+    // TODO: 24.02.2020 добавить в настройки 
     private final int BUFFER_SIZE = 8192;
     private Path rootDir;
     private ByteBuf byteBuf;
@@ -54,7 +52,8 @@ public class FileDownloader {
             if (state == State.FILE_DATA) downloadFileData();
             if (state == State.CHECKSUM) readChecksum();
         } catch (IOException e) {
-            e.printStackTrace();
+            LogServiceCommon.TRANSFER.error("Error during file download", e.toString());
+            LogServiceCommon.TRANSFER.error(e);
             closeFileForWrite();
             state = State.FAIL;
         }
@@ -79,29 +78,38 @@ public class FileDownloader {
     private void readFilenameLen() throws NoEnoughDataException {
         checkAvailableData(Short.BYTES);
         filenameLen = byteBuf.readShort();
-        if (filenameLen <= 0) state = State.FAIL;
-        else state = State.FILE_INFO;
-        System.out.println("Checked filename len - " + filenameLen);
+        if (filenameLen <= 0) {
+            LogServiceCommon.TRANSFER.error("Filename length <= 0");
+            state = State.FAIL;
+        } else state = State.FILE_INFO;
+        LogServiceCommon.TRANSFER.info("Checked filename length - " + filenameLen);
     }
 
     private void readFilename() throws NoEnoughDataException, IOException {
         checkAvailableData(filenameLen + 2 * Long.BYTES);
         filename = byteBuf.readCharSequence(filenameLen, StandardCharsets.UTF_8).toString();
+        if (!filename.matches(FILENAME_PATTERN)) {
+            LogServiceCommon.TRANSFER.error("Filename doesn't match pattern - " + filename);
+            state = State.FAIL;
+            return;
+        }
         file = rootDir.resolve(filename);
         fileLen = byteBuf.readLong();
-        if (filenameLen < 0) {
+        if (fileLen < 0) {
+            LogServiceCommon.TRANSFER.error("File length < 0");
             state = State.FAIL;
             return;
         }
         fileDate = byteBuf.readLong();
-        if (fileInfoOnly) state = State.SUCCESS;
-        else {
+        LogServiceCommon.TRANSFER.info("filename - " + filename, "file length - " + fileLen, "file date - " + fileDate);
+        if (fileInfoOnly) {
+            LogServiceCommon.TRANSFER.info("File info getting success");
+            state = State.SUCCESS;
+        } else {
             state = State.FILE_DATA;
-            System.out.println("Downloading");
+            LogServiceCommon.TRANSFER.info("Downloading file - " + filename);
             openFileForWrite();
         }
-        System.out.println("Checked filename - " + filename);
-        System.out.println("Checked file len - " + fileLen);
     }
 
     private void downloadFileData() throws NoEnoughDataException, IOException {
@@ -117,21 +125,21 @@ public class FileDownloader {
         checksum = md.digest();
         state = State.CHECKSUM;
         closeFileForWrite();
-        System.out.println("Download complete");
+        LogServiceCommon.TRANSFER.info("Download complete - " + filename);
     }
 
     private void readChecksum() throws NoEnoughDataException, IOException {
         checkAvailableData(GlobalSettings.CHECKSUM_LENGTH);
         for (int i = 0; i < GlobalSettings.CHECKSUM_LENGTH; i++) {
             if (byteBuf.readByte() != checksum[i]) {
-                System.out.println("Checksum error");
+                LogServiceCommon.TRANSFER.error("Checksum error. Incoming file checksum - " + Arrays.toString(checksum));
                 Files.deleteIfExists(file);
                 state = State.FAIL;
                 return;
             }
         }
         state = State.SUCCESS;
-        System.out.println("Checksum OK");
+        LogServiceCommon.TRANSFER.info("Checksum for " + filename + " - OK");
     }
 
     public void reset() {
@@ -159,7 +167,9 @@ public class FileDownloader {
         try {
             this.md = MessageDigest.getInstance(GlobalSettings.CHECKSUM_PROTOCOL);
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            String s = "Checksum protocol" + GlobalSettings.CHECKSUM_PROTOCOL + " doesn't exist";
+            LogServiceCommon.APP.fatal(s);
+            throw new RuntimeException(s);
         }
     }
 
@@ -167,7 +177,7 @@ public class FileDownloader {
         try {
             if (out != null) out.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            LogServiceCommon.APP.error("File closing error");
         }
     }
 

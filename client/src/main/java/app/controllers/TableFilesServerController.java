@@ -38,10 +38,15 @@ public class TableFilesServerController extends TableViewController {
 
     public void update(List<FileRepresentation> serverList) {
         ObservableList<FileRepresentation> list = tableFilesServer.getItems();
-        Platform.runLater(() -> {
-            list.clear();
-            list.addAll(serverList);
-            getMainController().addToLog("Server list updated");
-        });
+        if (serverList.size() == 0) {
+            getMainController().addToLog("No files on server");
+            Platform.runLater(list::clear);
+        } else {
+            Platform.runLater(() -> {
+                list.clear();
+                list.addAll(serverList);
+                getMainController().addToLog("Server list updated");
+            });
+        }
     }
 }

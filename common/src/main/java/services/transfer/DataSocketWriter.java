@@ -1,4 +1,4 @@
-package services;
+package services.transfer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -44,6 +44,7 @@ public class DataSocketWriter {
         ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer(GlobalSettings.COMMAND_DATA_LENGTH + 2);
         buf.writeByte(CommandBytes.COMMAND_START.getByte());
         buf.writeByte(b.getByte());
+        // TODO: 16.02.2020 сделано для логирования, возможно нужно будет удалить
         System.out.println("out: " + CommandBytes.COMMAND_START.name() + " " + CommandBytes.getCommand(b.getByte()));
         return buf;
     }

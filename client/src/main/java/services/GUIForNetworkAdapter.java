@@ -58,4 +58,8 @@ public class GUIForNetworkAdapter {
     public void updateServerFilesList(List<FileRepresentation> filesList) {
         controller.updateServerList(filesList);
     }
+
+    public void log(String s) {
+        controller.addToLog(s);
+    }
 }

@@ -6,6 +6,10 @@ import io.netty.channel.ChannelHandlerContext;
 import resources.CommandBytes;
 import resources.LoginRegError;
 import services.*;
+import services.transfer.CommandPackage;
+import services.transfer.DataSocketWriter;
+import services.transfer.FileDownloader;
+import services.transfer.FileUploader;
 import settings.GlobalSettings;
 
 import java.io.IOException;
@@ -137,17 +141,21 @@ public class ClientHandler {
     }
 
     private void sendFilesList() throws IOException {
+        LogService.USERS.info("Sending files list to user", login);
         List<Path> list = Files.list(rootDir).sorted(Comparator.naturalOrder()).collect(Collectors.toList());
         DataSocketWriter.sendCommand(ctx, CommandBytes.FILES_LIST, list.size());
         for (Path file : list) {
             FileUploader.sendFileInfo(ctx, file);
         }
+        LogService.USERS.info("Complete Sending files list to user", login);
         state = State.IDLE;
     }
 
     private void sendAllFiles() throws IOException {
+        LogService.USERS.info("Start uploading all files to user", login);
         sendFilesList();
         sendFiles();
+        LogService.USERS.info("Complete uploading all files to user", login);
     }
 
     // TODO: 16.02.2020 перенести в FileUploader после настройки логгера для модуля common
@@ -161,18 +169,17 @@ public class ClientHandler {
     }
 
     private void sendFile(Path file) {
-        System.out.println("Uploading: " + file.getFileName());
+        LogService.USERS.info("Uploading: " + file.getFileName().toString());
         if (FileUploader.upload(ctx, file)) {
-            LogService.SERVER.info("File upload success", file.getFileName().toString());
-            System.out.println("File upload success: " + file.getFileName());
+            LogService.USERS.info("File upload success", file.getFileName().toString());
         } else {
-            LogService.SERVER.info("File upload failed", file.getFileName().toString());
-            System.out.println("File upload failed: " + file.getFileName());
+            LogService.USERS.info("File upload failed", file.getFileName().toString());
         }
     }
 
     private void resolveFileRequest() throws NoEnoughDataException {
         String filename = downloader.downloadFileInfo().getName();
+        LogService.USERS.info("Request file from user", login, filename);
         Path file = rootDir.resolve(filename);
         sendFile(file);
         state = State.IDLE;
@@ -186,7 +193,6 @@ public class ClientHandler {
     private void fileDownload() throws NoEnoughDataException {
         int result = downloader.download();
         if (result == 1) state = State.IDLE;
-            // TODO: 14.02.2020 обработать ошибку
         else if (result == -1) {
             downloader.reset();
             state = State.IDLE;
@@ -194,7 +200,7 @@ public class ClientHandler {
     }
 
     private void setUserRepo() throws IOException {
-        rootDir = MainServer.REPOSITORY_ROOT.resolve(login);
+        rootDir = server.getRootDir().resolve(login);
         if (Files.notExists(rootDir)) Files.createDirectory(rootDir);
     }
 

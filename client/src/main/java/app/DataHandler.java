@@ -3,9 +3,15 @@ package app;
 import exceptions.NoEnoughDataException;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import resources.ClientSettings;
 import resources.CommandBytes;
 import resources.FileRepresentation;
 import services.*;
+import services.settings.Settings;
+import services.transfer.CommandPackage;
+import services.transfer.DataSocketWriter;
+import services.transfer.FileDownloader;
+import services.transfer.FileUploader;
 import settings.GlobalSettings;
 
 import java.io.IOException;
@@ -18,7 +24,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DataHandler {
-    private final Path REPOSITORY_DIRECTORY = Paths.get("client-repo");
     private ChannelHandlerContext ctx;
     private ByteBuf byteBuf;
     private FileDownloader downloader;
@@ -28,15 +33,17 @@ public class DataHandler {
     private int filesListCount;
     private List<FileRepresentation> filesList;
     private CommandPackage commandPackage;
+    private Path repoPath;
 
     public DataHandler(ChannelHandlerContext ctx, ByteBuf byteBuf) {
         this.ctx = ctx;
         this.byteBuf = byteBuf;
         this.commandPackage = new CommandPackage(byteBuf);
+        this.repoPath = Paths.get(Settings.get(ClientSettings.ROOT_DIRECTORY));
         this.logged = false;
         this.state = State.IDLE;
         try {
-            if (!Files.exists(REPOSITORY_DIRECTORY)) Files.createDirectory(REPOSITORY_DIRECTORY);
+            if (!Files.exists(repoPath)) Files.createDirectory(repoPath);
         } catch (Exception e) {
             LogService.CLIENT.error("Error while creating repository directory", e.toString());
         }
@@ -100,7 +107,7 @@ public class DataHandler {
 
     private void setAuthSuccess() {
         GUIForNetworkAdapter.getInstance().setAuthorizationSuccess();
-        downloader = new FileDownloader(REPOSITORY_DIRECTORY, byteBuf);
+        downloader = new FileDownloader(repoPath, byteBuf);
         state = State.IDLE;
         logged = true;
     }
@@ -129,7 +136,7 @@ public class DataHandler {
     // TODO: 16.02.2020 перенести в FileUploader после настройки логгера для модуля common
     public void uploadFiles() {
         try {
-            List<Path> files = Files.list(REPOSITORY_DIRECTORY)
+            List<Path> files = Files.list(repoPath)
                     .sorted(Comparator.naturalOrder())
                     .collect(Collectors.toList());
             for (Path file : files) {
@@ -142,7 +149,7 @@ public class DataHandler {
 
     // TODO: 22.02.2020 сохранить path в FileRepresentation и удалить этот метод
     public void uploadFile(String file) {
-        Path path = REPOSITORY_DIRECTORY.resolve(file);
+        Path path = repoPath.resolve(file);
         uploadFile(path);
     }
 
@@ -172,7 +179,7 @@ public class DataHandler {
 
     public List<FileRepresentation> getClientFilesList() {
         try {
-            return Files.list(REPOSITORY_DIRECTORY)
+            return Files.list(repoPath)
                     .sorted(Comparator.naturalOrder())
                     .map(FileRepresentation::new)
                     .collect(Collectors.toList());
@@ -191,17 +198,19 @@ public class DataHandler {
     }
 
     public void sendFileRequest(String filename) {
-        try {
-            DataSocketWriter.sendCommand(ctx, CommandBytes.FILE);
-            FileUploader.sendFileInfo(ctx, filename);
-        } catch (IOException e) {
-            LogService.SERVER.error(e);
-        }
+        DataSocketWriter.sendCommand(ctx, CommandBytes.FILE);
+        FileUploader.sendFileInfo(ctx, filename);
     }
 
     private void getFilesList() throws NoEnoughDataException {
         while (filesListCount > 0) {
             FileRepresentation file = downloader.downloadFileInfo();
+            if (file == null) {
+                GUIForNetworkAdapter.getInstance().log("Files list update from server failed");
+                LogService.SERVER.error("Files list update from server failed", filesList.toString(), "filesListCount - " + filesListCount);
+                state = State.IDLE;
+                break;
+            }
             filesList.add(file);
             filesListCount--;
         }

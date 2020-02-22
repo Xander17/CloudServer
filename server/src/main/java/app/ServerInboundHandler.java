@@ -4,25 +4,29 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import resources.ServerSettings;
 import services.LogService;
+import services.settings.Settings;
 
 public class ServerInboundHandler extends ChannelInboundHandlerAdapter {
-
-    private int BUFFER_MIN_SIZE = 100 * 1024;
-    private int BUFFER_MAX_SIZE = 1024 * 1024 * 5;
-    private int BUFFER_SLICE_INDEX = 1024 * 1024;
 
     private MainServer server;
     private ClientHandler clientHandler;
     private ByteBuf accumulator;
+    private int bufferMinSize;
+    private int bufferMaxSize;
+    private int bufferSliceIndex;
 
     public ServerInboundHandler(MainServer server) {
         this.server = server;
+        bufferMinSize = Settings.getInt(ServerSettings.INBOUND_BUFFER_MIN_SIZE);
+        bufferMaxSize = Settings.getInt(ServerSettings.INBOUND_BUFFER_MAX_SIZE);
+        bufferSliceIndex = bufferMaxSize / 2;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        accumulator = ByteBufAllocator.DEFAULT.directBuffer(BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
+        accumulator = ByteBufAllocator.DEFAULT.directBuffer(bufferMinSize, bufferMaxSize);
         clientHandler = server.addClient(ctx, accumulator);
     }
 
@@ -38,7 +42,7 @@ public class ServerInboundHandler extends ChannelInboundHandlerAdapter {
         clientHandler.handle();
         if (accumulator.readableBytes() == 0) accumulator.clear();
             // TODO: 14.02.2020 проверить работу слайса
-        else if (accumulator.writerIndex() > BUFFER_SLICE_INDEX) accumulator.slice();
+        else if (accumulator.writerIndex() > bufferSliceIndex) accumulator.slice();
         ((ByteBuf) msg).release();
     }
 
