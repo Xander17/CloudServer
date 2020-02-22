@@ -1,6 +1,7 @@
 package services;
 
 import app.DataHandler;
+import app.MainController;
 import resources.FileRepresentation;
 
 import java.util.List;
@@ -9,14 +10,17 @@ public class NetworkForGUIAdapter {
     private static NetworkForGUIAdapter instance;
     private DataHandler handler;
 
-    public NetworkForGUIAdapter(DataHandler handler) {
+    private NetworkForGUIAdapter(DataHandler handler) {
+        this.handler = handler;
+    }
+
+    public static void setHandler(DataHandler handler) {
         if (handler == null) {
-            String error = "NetworkForGUIAdapter creation error. Data handler is null.";
+            String error = "NetworkForGUIAdapter error. Data handler is null.";
             LogService.CLIENT.error(error);
             throw new NullPointerException(error);
         }
-        this.handler = handler;
-        instance = this;
+        if (instance == null) instance = new NetworkForGUIAdapter(handler);
     }
 
     public static NetworkForGUIAdapter getInstance() {

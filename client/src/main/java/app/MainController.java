@@ -50,11 +50,11 @@ public class MainController implements Initializable {
         loginState = true;
         dataTransferDisable = true;
         setupControllers();
-        new GUIForNetworkAdapter(this);
+        GUIForNetworkAdapter.setController(this);
         runServerListener();
     }
 
-    private void setupControllers(){
+    private void setupControllers() {
         tableFilesServerController.setMainController(this);
         tableFilesLocalController.setMainController(this);
         loginWindowController.setMainController(this);
@@ -128,7 +128,7 @@ public class MainController implements Initializable {
         }).start();
     }
 
-    public void uploadFile(String filename){
+    public void uploadFile(String filename) {
         addToLog("Uploading file - " + filename);
         new Thread(() -> {
             uploadStart();
@@ -137,11 +137,11 @@ public class MainController implements Initializable {
         }).start();
     }
 
-    private void uploadStart(){
+    private void uploadStart() {
         setButtonsDisable(true);
     }
 
-    private void uploadComplete(){
+    private void uploadComplete() {
         refreshServerList();
         setButtonsDisable(false);
     }

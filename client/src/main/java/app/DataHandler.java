@@ -40,7 +40,7 @@ public class DataHandler {
         } catch (Exception e) {
             LogService.CLIENT.error("Error while creating repository directory", e.toString());
         }
-        new NetworkForGUIAdapter(this);
+        NetworkForGUIAdapter.setHandler(this);
     }
 
     public void handle() {
