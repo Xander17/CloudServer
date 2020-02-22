@@ -11,19 +11,14 @@ public class ClientInboundHandler extends ChannelInboundHandlerAdapter {
     private int BUFFER_MAX_SIZE = 1024 * 1024 * 5;
     private int BUFFER_SLICE_INDEX = 1024 * 1024;
 
-    private MainController controller;
     private ByteBuf accumulator;
 
     private DataHandler serverHandler;
 
-    public ClientInboundHandler(MainController controller) {
-        this.controller = controller;
-    }
-
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         accumulator = ByteBufAllocator.DEFAULT.directBuffer(BUFFER_MIN_SIZE, BUFFER_MAX_SIZE);
-        serverHandler = new DataHandler(ctx, accumulator, controller);
+        serverHandler = new DataHandler(ctx, accumulator);
     }
 
     @Override

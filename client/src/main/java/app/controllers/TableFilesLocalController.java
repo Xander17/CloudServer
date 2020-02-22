@@ -1,6 +1,5 @@
 package app.controllers;
 
-import app.MainController;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -8,6 +7,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.input.MouseEvent;
 import resources.FileRepresentation;
+import services.NetworkForGUIAdapter;
 
 import java.net.URL;
 import java.util.List;
@@ -27,28 +27,21 @@ public class TableFilesLocalController extends TableViewController {
         setRowDeselectListener(tableFilesLocal);
     }
 
+    @Override
     public void onClick(MouseEvent mouseEvent) {
-        if (mouseEvent.getClickCount() < 2) return;
+        if (getMainController().isDataTransferDisable() || mouseEvent.getClickCount() < 2) return;
         FileRepresentation file = tableFilesLocal.getSelectionModel().getSelectedItem();
         if (file == null) return;
-        MainController.getInstance().addToLog("Uploading file - " + file.getName());
-        // TODO: 20.02.2020 сделать что-то, переместить может.. т.к. все методы из другого контроллера
-        new Thread(() -> {
-            MainController mainController = MainController.getInstance();
-            mainController.setButtonsDisable(true);
-            mainController.getDataHandler().uploadFile(file.getName());
-            mainController.refreshServerList();
-            mainController.setButtonsDisable(false);
-        }).start();
+        getMainController().uploadFile(file.getName());
     }
 
     public void update() {
-        List<FileRepresentation> files = MainController.getInstance().getDataHandler().getClientFilesRepList();
+        List<FileRepresentation> files = NetworkForGUIAdapter.getInstance().getClientFilesList();
         ObservableList<FileRepresentation> list = tableFilesLocal.getItems();
         Platform.runLater(() -> {
             list.clear();
             list.addAll(files);
-            MainController.getInstance().addToLog("Client list updated");
+            getMainController().addToLog("Client list updated");
         });
     }
 }

@@ -21,7 +21,6 @@ public class DataHandler {
     private final Path REPOSITORY_DIRECTORY = Paths.get("client-repo");
     private ChannelHandlerContext ctx;
     private ByteBuf byteBuf;
-    private MainController controller;
     private FileDownloader downloader;
     private State state;
     private boolean noEnoughBytes;
@@ -30,20 +29,18 @@ public class DataHandler {
     private List<FileRepresentation> filesList;
     private CommandPackage commandPackage;
 
-    public DataHandler(ChannelHandlerContext ctx, ByteBuf byteBuf, MainController controller) {
+    public DataHandler(ChannelHandlerContext ctx, ByteBuf byteBuf) {
         this.ctx = ctx;
         this.byteBuf = byteBuf;
         this.commandPackage = new CommandPackage(byteBuf);
-        this.controller = controller;
         this.logged = false;
         this.state = State.IDLE;
-        controller.setDataHandler(this);
         try {
             if (!Files.exists(REPOSITORY_DIRECTORY)) Files.createDirectory(REPOSITORY_DIRECTORY);
         } catch (Exception e) {
             LogService.CLIENT.error("Error while creating repository directory", e.toString());
         }
-
+        new NetworkForGUIAdapter(this);
     }
 
     public void handle() {
@@ -70,7 +67,7 @@ public class DataHandler {
             b = byteBuf.readByte();
             if (logged && CommandBytes.PACKAGE_START.check(b)) {
                 downloader.reset();
-                controller.setButtonsDisable(true);
+                GUIForNetworkAdapter.getInstance().setDownloadInProgressState();
                 state = State.DOWNLOAD;
                 break;
             } else if (CommandBytes.COMMAND_START.check(b)) {
@@ -97,23 +94,31 @@ public class DataHandler {
     }
 
     private void setRegSuccess() {
-        controller.setRegSuccess();
+        GUIForNetworkAdapter.getInstance().setRegistrationSuccess();
         state = State.IDLE;
     }
 
     private void setAuthSuccess() {
-        controller.setAuthSuccess(commandPackage.getInt());
+        GUIForNetworkAdapter.getInstance().setAuthorizationSuccess();
         downloader = new FileDownloader(REPOSITORY_DIRECTORY, byteBuf);
         state = State.IDLE;
         logged = true;
     }
 
     private void setRegAuthError() {
-        controller.setRegAuthError(commandPackage.getInt());
+        GUIForNetworkAdapter.getInstance().setRegAuthError(commandPackage.getInt());
         state = State.IDLE;
     }
 
-    public void sendRegAuthData(CommandBytes command, String login, String pass) {
+    public void signIn(String login, String pass) {
+        sendRegAuthData(CommandBytes.AUTH, login, pass);
+    }
+
+    public void signUp(String login, String pass) {
+        sendRegAuthData(CommandBytes.REG, login, pass);
+    }
+
+    private void sendRegAuthData(CommandBytes command, String login, String pass) {
         if (!CommandBytes.REG.equals(command) && !CommandBytes.AUTH.equals(command)) return;
         byte[] loginBytes = login.getBytes();
         byte[] passBytes = pass.getBytes();
@@ -122,15 +127,20 @@ public class DataHandler {
     }
 
     // TODO: 16.02.2020 перенести в FileUploader после настройки логгера для модуля common
-    public void uploadFiles() throws IOException {
-        List<Path> files = Files.list(REPOSITORY_DIRECTORY)
-                .sorted(Comparator.naturalOrder())
-                .collect(Collectors.toList());
-        for (Path file : files) {
-            uploadFile(file);
+    public void uploadFiles() {
+        try {
+            List<Path> files = Files.list(REPOSITORY_DIRECTORY)
+                    .sorted(Comparator.naturalOrder())
+                    .collect(Collectors.toList());
+            for (Path file : files) {
+                uploadFile(file);
+            }
+        } catch (IOException e) {
+            LogService.CLIENT.error("Ошибка отправки файлов", e.toString());
         }
     }
 
+    // TODO: 22.02.2020 сохранить path в FileRepresentation и удалить этот метод
     public void uploadFile(String file) {
         Path path = REPOSITORY_DIRECTORY.resolve(file);
         uploadFile(path);
@@ -151,8 +161,7 @@ public class DataHandler {
         int result = downloader.download();
         if (result == 1) {
             state = State.IDLE;
-            controller.refreshFilesList(true);
-            controller.setButtonsDisable(false);
+            GUIForNetworkAdapter.getInstance().setDownloadComplete();
         }
         // TODO: 14.02.2020 обработать ошибку
         else if (result == -1) {
@@ -161,19 +170,7 @@ public class DataHandler {
         }
     }
 
-    public List<String> getClientFilesList() {
-        try {
-            return Files.list(REPOSITORY_DIRECTORY)
-                    .map(file -> file.getFileName().toString())
-                    .sorted(Comparator.naturalOrder())
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            LogService.CLIENT.error("Error while getting files list", e.toString());
-            return null;
-        }
-    }
-
-    public List<FileRepresentation> getClientFilesRepList() {
+    public List<FileRepresentation> getClientFilesList() {
         try {
             return Files.list(REPOSITORY_DIRECTORY)
                     .sorted(Comparator.naturalOrder())
@@ -208,9 +205,8 @@ public class DataHandler {
             filesList.add(file);
             filesListCount--;
         }
-        controller.updateServerList(filesList);
+        GUIForNetworkAdapter.getInstance().updateServerFilesList(filesList);
         state = State.IDLE;
-        controller.setButtonsDisable(false);
     }
 
     private void checkAvailableData(int length) throws NoEnoughDataException {

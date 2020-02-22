@@ -6,7 +6,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.input.MouseEvent;
 import resources.FileRepresentation;
 
-public abstract class TableViewController implements Initializable {
+public abstract class TableViewController extends SecondLevelController implements Initializable {
 
     void setRowDeselectListener(TableView<FileRepresentation> tableView) {
         tableView.setRowFactory(t -> {

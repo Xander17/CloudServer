@@ -22,14 +22,13 @@ public class ClientStart extends Application {
         MainController controller = loader.getController();
         primaryStage.setTitle("GB Cloud");
         primaryStage.setScene(new Scene(root, 900, 700));
-        primaryStage.setMinWidth(300);
-        primaryStage.setMinHeight(300);
+        primaryStage.setMinWidth(500);
+        primaryStage.setMinHeight(500);
         primaryStage.getScene().getStylesheets().add("css/base_style.css");
         primaryStage.getScene().getStylesheets().add("css/gradient_style.css");
         primaryStage.getScene().getStylesheets().add(DEFAULT_STYLE);
         primaryStage.getIcons().add(new Image("img/icon.png"));
         primaryStage.setOnCloseRequest(e -> controller.exitApp());
-//        primaryStage.initStyle(StageStyle.UNDECORATED);
         primaryStage.show();
     }
 }

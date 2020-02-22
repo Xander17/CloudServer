@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<StackPane xmlns="http://javafx.com/javafx"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="app.controllers.LoginWindowController"
+           fx:id="loginWindow">
+
+    <VBox fx:id="vBoxLogin" alignment="CENTER" maxHeight="70.0" maxWidth="250.0" styleClass="dialogWindow">
+        <Label styleClass="lblDialogWindowTitle" text="Sign in" maxWidth="200.0"/>
+        <Label styleClass="lblLoginWindow" text="Login"/>
+        <TextField fx:id="tfLogin" maxWidth="200" onAction="#passwordFocus" text="qwerty"/>
+        <Label styleClass="lblLoginWindow" text="Password"/>
+        <PasswordField fx:id="tfPassword" maxWidth="200" onAction="#loginToServer" text="qwerty"/>
+        <Label fx:id="lblLoginInfo" styleClass="lblLoginWindow"/>
+        <Button fx:id="btnLogin" maxWidth="150" onAction="#loginToServer" styleClass="btnNotControl"
+                text="Sign in" disable="true"/>
+        <Button fx:id="btnLoginRegSwap" maxWidth="150" onAction="#swapLoginReg" styleClass="btnNotControl"
+                text="To sign up ->" disable="true"/>
+    </VBox>
+
+    <VBox fx:id="vBoxRegistration" alignment="CENTER" maxHeight="70.0" maxWidth="250.0" visible="false"
+          styleClass="dialogWindow">
+        <Label styleClass="lblDialogWindowTitle" text="Sign up" maxWidth="200.0"/>
+        <Label styleClass="lblLoginWindow" text="Login"/>
+        <TextField fx:id="tfRegLogin" maxWidth="200" onAction="#regPasswordFocus"/>
+        <Label styleClass="lblLoginWindow" text="Password"/>
+        <PasswordField fx:id="tfRegPassword" maxWidth="200" onAction="#signUp"/>
+        <Label fx:id="lblRegInfo" styleClass="lblLoginWindow"/>
+        <Button fx:id="btnReg" maxWidth="150" onAction="#signUp" styleClass="btnNotControl" text="Sign up"/>
+        <Button maxWidth="150" onAction="#swapLoginReg" styleClass="btnNotControl" text="To sign in ->"/>
+    </VBox>
+</StackPane>

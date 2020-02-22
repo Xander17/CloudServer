@@ -1,15 +1,13 @@
 package app.controllers;
 
-import app.MainController;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.input.MouseEvent;
 import resources.FileRepresentation;
+import services.NetworkForGUIAdapter;
 
 import java.net.URL;
 import java.util.List;
@@ -29,12 +27,13 @@ public class TableFilesServerController extends TableViewController {
         setRowDeselectListener(tableFilesServer);
     }
 
+    @Override
     public void onClick(MouseEvent mouseEvent) {
-        if (mouseEvent.getClickCount() < 2) return;
+        if (getMainController().isDataTransferDisable() || mouseEvent.getClickCount() < 2) return;
         FileRepresentation file = tableFilesServer.getSelectionModel().getSelectedItem();
         if (file == null) return;
-        MainController.getInstance().addToLog("Downloading request - " + file.getName());
-        MainController.getInstance().getDataHandler().sendFileRequest(file.getName());
+        getMainController().addToLog("Downloading request - " + file.getName());
+        NetworkForGUIAdapter.getInstance().fileRequest(file.getName());
     }
 
     public void update(List<FileRepresentation> serverList) {
@@ -42,7 +41,7 @@ public class TableFilesServerController extends TableViewController {
         Platform.runLater(() -> {
             list.clear();
             list.addAll(serverList);
-            MainController.getInstance().addToLog("Server list updated");
+            getMainController().addToLog("Server list updated");
         });
     }
 }

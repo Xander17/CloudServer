@@ -11,8 +11,9 @@
     <columns>
         <TableColumn text="File name" fx:id="colFileNameServer" sortable="false"
                      prefWidth="${0.5*tableFilesServer.width}"/>
-        <TableColumn text="Size" fx:id="colFileSizeServer" sortable="false"/>
+        <TableColumn text="Size" fx:id="colFileSizeServer" sortable="false"
+                     prefWidth="${0.19*tableFilesServer.width}"/>
         <TableColumn text="Uploaded date" fx:id="colFileDateServer" sortable="false"
-                     prefWidth="${0.29*tableFilesServer.width}"/>
+                     prefWidth="${0.3*tableFilesServer.width}"/>
     </columns>
 </TableView>

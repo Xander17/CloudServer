@@ -1,7 +1,6 @@
 package services;
 
 import app.ClientInboundHandler;
-import app.MainController;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -14,11 +13,6 @@ import settings.GlobalSettings;
 import java.net.InetSocketAddress;
 
 public class NetworkThread extends Thread {
-    private MainController controller;
-
-    public NetworkThread(MainController controller) {
-        this.controller = controller;
-    }
 
     @Override
     public void run() {
@@ -30,11 +24,11 @@ public class NetworkThread extends Thread {
                     .remoteAddress(new InetSocketAddress(GlobalSettings.CONNECTION_HOST, GlobalSettings.CONNECTION_PORT))
                     .handler(new ChannelInitializer<SocketChannel>() {
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            socketChannel.pipeline().addLast(new ClientInboundHandler(controller));
+                            socketChannel.pipeline().addLast(new ClientInboundHandler());
                         }
                     });
             ChannelFuture channelFuture = clientBootstrap.connect().sync();
-            controller.setLoginDisable(false);
+            GUIForNetworkAdapter.getInstance().setConnectionEstablishedState();
             channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
             LogService.SERVER.error(e);

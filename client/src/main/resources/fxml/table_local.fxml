@@ -11,8 +11,9 @@
     <columns>
         <TableColumn text="File name" fx:id="colFileNameLocal" sortable="false"
                      prefWidth="${0.5*tableFilesLocal.width}"/>
-        <TableColumn text="Size" fx:id="colFileSizeLocal" sortable="false"/>
+        <TableColumn text="Size" fx:id="colFileSizeLocal" sortable="false"
+                     prefWidth="${0.19*tableFilesLocal.width}"/>
         <TableColumn text="Last edited" fx:id="colFileDateLocal" sortable="false"
-                     prefWidth="${0.29*tableFilesLocal.width}"/>
+                     prefWidth="${0.3*tableFilesLocal.width}"/>
     </columns>
 </TableView>
