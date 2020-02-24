@@ -5,7 +5,7 @@
     <parent>
         <artifactId>cloud-server</artifactId>
         <groupId>ru.geekbrains.cloud</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>client</artifactId>
@@ -14,18 +14,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <finalNameString>GBCloudClient</finalNameString>
     </properties>
     <build>
-        <finalName>GBCloudClient</finalName>
+        <finalName>${finalNameString}-${revision}</finalName>
         <plugins>
-            <plugin>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-maven-plugin</artifactId>
-                <version>0.0.3</version>
-                <configuration>
-                    <mainClass>client.app.ClientStart</mainClass>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -33,7 +26,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>app.ClientStart</mainClass>
+                            <mainClass>ru.kornev.cloudclient.app.ClientStart</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -44,9 +37,11 @@
                 <version>3.2.0</version>
                 <configuration>
                     <descriptorRefs>jar-with-dependencies</descriptorRefs>
+                    <finalName>${finalNameString}-${revision}-full</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
                     <archive>
                         <manifest>
-                            <mainClass>app.ClientStart</mainClass>
+                            <mainClass>ru.kornev.cloudclient.app.ClientStart</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -65,19 +60,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-controls</artifactId>
-            <version>13.0.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-fxml</artifactId>
-            <version>13.0.2</version>
-        </dependency>
-        <dependency>
             <groupId>ru.geekbrains.cloud</groupId>
             <artifactId>common</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${revision}</version>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>

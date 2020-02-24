@@ -1,7 +1,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:id="mainPane" xmlns="http://javafx.com/javafx/8.0.999-ea"
-            fx:controller="app.MainController">
+            fx:controller="ru.kornev.cloudclient.app.MainController">
     <center>
         <StackPane>
             <BorderPane BorderPane.alignment="center" fx:id="paneMainView" visible="false" disable="true">
@@ -25,22 +25,28 @@
                     <BorderPane>
                         <left>
                             <Button fx:id="btnSendAllToServer" onAction="#uploadAllFiles"
-                                    styleClass="btnNotControl" text="Upload All &gt;&gt;&gt;"
+                                    styleClass="btnCommand" text="Upload All &gt;&gt;&gt;"
                                     prefWidth="${0.35*mainPane.width}"/>
                         </left>
                         <center>
                             <Button fx:id="btnGetFilesList" onAction="#refreshFilesLists"
-                                    styleClass="btnNotControl" text="Refresh files lists"
+                                    styleClass="btnCommand" text="Refresh files lists"
                                     prefWidth="${0.3*mainPane.width}"/>
                         </center>
                         <right>
                             <Button fx:id="btnReceiveAllFromServer" onAction="#requestAllFilesFromServer"
-                                    styleClass="btnNotControl" text="&lt;&lt;&lt; Download All"
+                                    styleClass="btnCommand" text="&lt;&lt;&lt; Download All"
                                     prefWidth="${0.35*mainPane.width}"/>
                         </right>
                         <bottom>
-                            <TextArea fx:id="taLogs" editable="false"
-                                      prefHeight="${0.15*mainPane.height}" prefWidth="${mainPane.width}"/>
+                            <VBox prefWidth="${mainPane.width}">
+                                <TextArea fx:id="taLogs" editable="false"
+                                          prefHeight="${0.15*mainPane.height}" prefWidth="${mainPane.width}"/>
+                                <HBox prefWidth="${mainPane.width}">
+                                    <ProgressBar fx:id="progressBar" prefWidth="${mainPane.width}" progress="0"/>
+                                    <Label fx:id="lblProgress" prefWidth="150" alignment="CENTER"/>
+                                </HBox>
+                            </VBox>
                         </bottom>
                     </BorderPane>
                 </bottom>

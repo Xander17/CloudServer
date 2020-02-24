@@ -1,3 +1,4 @@
+/*Common root settings*/
 .root * {
     -fx-text-fill: -fx-font-color;
 }
@@ -8,17 +9,7 @@
     -fx-border-width: 0 1 1 1;
 }
 
-#titleLabel {
-    -fx-font-weight: bold;
-    -fx-padding: 2 0 0 15;
-}
-
-#titleBox {
-    -fx-background-color: -fx-title-bg;
-    -fx-border-color: -fx-bordercolor;
-    -fx-border-width: 1 1 0 1;
-}
-
+/*Login and registration windows*/
 .dialogWindow {
     -fx-border-color: -fx-border-gradient;
     -fx-border-width: 2;
@@ -26,10 +17,6 @@
     -fx-background-color: -fx-windows-bg;
     -fx-background-radius: 10;
     -fx-effect: dropshadow(three-pass-box, dimgrey, 5, 0, 2, 2);
-}
-
-#vboxAbout {
-    -fx-padding: 10;
 }
 
 .lblDialogWindowTitle {
@@ -67,7 +54,8 @@
     -fx-alignment: center;
 }
 
-.btnNotControl {
+/*Buttons*/
+.btnCommand {
     -fx-background-color: -fx-button-up;
     -fx-border-color: -fx-bordercolor;
     -fx-border-width: 1;
@@ -81,35 +69,24 @@
     -fx-background-insets: 5;
 }
 
-.btnNotControl:hover {
+.btnCommand:hover {
     -fx-background-color: -fx-button-over;
 }
 
-.btnNotControl:pressed {
+.btnCommand:pressed {
     -fx-background-color: -fx-button-down;
     -fx-effect: innershadow(three-pass-box, dimgrey, 2, 0, 1, 1);
 }
 
-#btnSend {
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
-    -fx-border-insets: 0;
-    -fx-background-insets: 0;
-}
-
-.btnControl {
-    -fx-background-color: transparent;
-    -fx-border-width: 0;
-    -fx-font-weight: bold;
-    -fx-font-family: "Arial Black";
-}
-
+/*Text area taLogs*/
 #taLogs {
     -fx-background-color: -fx-textarea-bg;
     -fx-border-color: -fx-bordercolor;
     -fx-border-width: 2;
     -fx-wrap-text: true;
     -fx-effect: innershadow(three-pass-box, dimgrey, 2, 0, 1, 1);
+    -fx-highlight-fill: -fx-text-selection-color;
+    -fx-highlight-text-fill: -fx-text-selection-font-color;
 }
 
 #taLogs .scroll-pane,
@@ -118,6 +95,7 @@
     -fx-background-color: transparent;
 }
 
+/*TableView*/
 .table-view {
     -fx-background-insets: 0;
     -fx-background-color: -fx-textarea-bg;
@@ -168,6 +146,7 @@
     -fx-text-fill: -fx-font-over-color;
 }
 
+/*Scroll bar*/
 .scroll-bar {
     -fx-effect: dropshadow(three-pass-box, dimgrey, 2, 0, -1, 0);
     -fx-background-color: -fx-scrollbar;
@@ -191,12 +170,14 @@
     -fx-background-color: -fx-font-color;
 }
 
+/*Context menu*/
 .context-menu {
     -fx-background-color: -fx-menu-bg;
     -fx-background-radius: 5;
     -fx-border-color: -fx-bordercolor;
     -fx-border-radius: 5;
 }
+
 .root.popup {
     -fx-background-color: transparent;
     -fx-border-width: 0;
@@ -208,7 +189,7 @@
 .menu-item:showing,
 .menu-item:hover,
 .menu-item:focused {
-    -fx-background-color: -fx-list-bg-hover;
+    -fx-background-color: -fx-menu-hover-color;
     -fx-background-radius: 5;
 }
 
@@ -223,4 +204,18 @@
 
 .separator .line {
     -fx-border-color: -fx-bordercolor;
+}
+
+/*Progress bar*/
+.progress-bar, .progress-bar .track {
+    -fx-background-color: -fx-textfield-bg;
+}
+
+.progress-bar .bar {
+    -fx-background-color: -fx-progressbar-bar-color;
+}
+
+/*Progress label*/
+#lblProgress {
+    -fx-background-color: -fx-textfield-bg;
 }

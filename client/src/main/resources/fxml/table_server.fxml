@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <TableView xmlns:fx="http://javafx.com/fxml"
            xmlns="http://javafx.com/javafx"
-           fx:controller="app.controllers.tables.TableFilesServerController"
+           fx:controller="ru.kornev.cloudclient.app.controllers.tables.TableFilesServerController"
            fx:id="tableFilesServer" onMouseClicked="#onClick">
     <placeholder>
         <Label text="No files on server"/>

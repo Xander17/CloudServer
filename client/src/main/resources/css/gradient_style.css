@@ -15,6 +15,4 @@
     -fx-scroll-thumb: linear-gradient(to right, -fx-scroll-col1, -fx-scroll-col2);
 
     -fx-menu-bg: linear-gradient(to bottom, -fx-menu-bg-col1, -fx-menu-bg-col2);
-
-    -fx-title-bg: linear-gradient(to top, -fx-title-bg-col1 50%, -fx-title-bg-col2 90%);
 }

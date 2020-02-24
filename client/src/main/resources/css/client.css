@@ -30,14 +30,15 @@
     -fx-scroll-col1: -fx-base-color3;
     -fx-scroll-col2: -fx-base-lightcolor;
 
-    -fx-menu-hover-col1: -fx-base-color3;
-    -fx-menu-hover-col2: -fx-base-darkcolor;
+    -fx-menu-hover-color:-fx-base-darkcolor;
 
     -fx-menu-bg-col1: -fx-base-lightcolor;
     -fx-menu-bg-col2: -fx-bordercolor;
 
-    -fx-title-bg-col1: -fx-base-lightcolor;
-    -fx-title-bg-col2: -fx-bordercolor;
+    -fx-list-bg-hover: -fx-base-darkcolor;
 
-    -fx-list-bg-hover:-fx-base-darkcolor;
+    -fx-text-selection-color: -fx-base-darkcolor;
+    -fx-text-selection-font-color: -fx-base-lightcolor;
+
+    -fx-progressbar-bar-color:-fx-base-darkcolor;
 }

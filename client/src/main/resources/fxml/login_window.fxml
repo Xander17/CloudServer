@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.VBox?>
 <StackPane xmlns="http://javafx.com/javafx"
            xmlns:fx="http://javafx.com/fxml"
-           fx:controller="app.controllers.LoginWindowController"
+           fx:controller="ru.kornev.cloudclient.app.controllers.LoginWindowController"
            fx:id="loginWindow">
 
     <VBox fx:id="vBoxLogin" alignment="CENTER" maxHeight="70.0" maxWidth="250.0" styleClass="dialogWindow">
@@ -15,9 +15,9 @@
         <Label styleClass="lblLoginWindow" text="Password"/>
         <PasswordField fx:id="tfPassword" maxWidth="200" onAction="#loginToServer" text="qwerty"/>
         <Label fx:id="lblLoginInfo" styleClass="lblLoginWindow"/>
-        <Button fx:id="btnLogin" maxWidth="150" onAction="#loginToServer" styleClass="btnNotControl"
+        <Button fx:id="btnLogin" maxWidth="150" onAction="#loginToServer" styleClass="btnCommand"
                 text="Sign in" disable="true"/>
-        <Button fx:id="btnLoginRegSwap" maxWidth="150" onAction="#swapLoginReg" styleClass="btnNotControl"
+        <Button fx:id="btnLoginRegSwap" maxWidth="150" onAction="#swapLoginReg" styleClass="btnCommand"
                 text="To sign up ->" disable="true"/>
     </VBox>
 
@@ -29,7 +29,7 @@
         <Label styleClass="lblLoginWindow" text="Password"/>
         <PasswordField fx:id="tfRegPassword" maxWidth="200" onAction="#signUp"/>
         <Label fx:id="lblRegInfo" styleClass="lblLoginWindow"/>
-        <Button fx:id="btnReg" maxWidth="150" onAction="#signUp" styleClass="btnNotControl" text="Sign up"/>
-        <Button maxWidth="150" onAction="#swapLoginReg" styleClass="btnNotControl" text="To sign in ->"/>
+        <Button fx:id="btnReg" maxWidth="150" onAction="#signUp" styleClass="btnCommand" text="Sign up"/>
+        <Button maxWidth="150" onAction="#swapLoginReg" styleClass="btnCommand" text="To sign in ->"/>
     </VBox>
 </StackPane>
