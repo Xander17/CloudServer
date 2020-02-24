@@ -5,7 +5,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import resources.CommandBytes;
 import resources.LoginRegError;
-import services.*;
+import services.AuthService;
+import services.LogService;
 import services.transfer.CommandPackage;
 import services.transfer.DataSocketWriter;
 import services.transfer.FileDownloader;
@@ -31,7 +32,6 @@ public class ClientHandler {
     private Integer id;
     private Path rootDir;
     private State state;
-    private boolean noEnoughBytes;
     private CommandPackage commandPackage;
     private boolean logged;
 
@@ -46,25 +46,30 @@ public class ClientHandler {
     }
 
     public void handle() {
-        noEnoughBytes = false;
-        while (byteBuf.readableBytes() > 0 && !noEnoughBytes) {
-            stateExecute();
+        try {
+            while (byteBuf.readableBytes() > 0) {
+                stateExecute();
+            }
+        } catch (NoEnoughDataException ignored) {
         }
     }
 
-    private void stateExecute() {
+    private void stateExecute() throws NoEnoughDataException {
         try {
             if (state == State.IDLE) listenPackageStart();
             else if (state == State.COMMAND_SELECT) selectCommandState();
             else if (state == State.REG) reg();
             else if (state == State.AUTH) auth();
-            else if (state == State.DOWNLOAD && logged) fileDownload();
-            else if (state == State.FILE_REQUEST && logged) resolveFileRequest();
+            else if (logged) stateLoggedExecute();
         } catch (IOException e) {
             LogService.SERVER.error(login, e.toString());
-        } catch (NoEnoughDataException e) {
-            noEnoughBytes = true;
         }
+    }
+
+    private void stateLoggedExecute() throws NoEnoughDataException, IOException {
+        if (state == State.DOWNLOAD) fileDownload();
+        else if (state == State.FILE_REQUEST) resolveFileRequest();
+        else if (state == State.DELETE_REQUEST) deleteFile();
     }
 
     private void listenPackageStart() {
@@ -83,25 +88,33 @@ public class ClientHandler {
     }
 
     private void selectCommandState() throws NoEnoughDataException, IOException {
-        checkAvailableData(GlobalSettings.COMMAND_DATA_LENGTH + 1);
+        FileDownloader.checkAvailableData(byteBuf,GlobalSettings.COMMAND_DATA_LENGTH + 1);
         commandPackage.load();
         if (CommandBytes.AUTH.check(commandPackage.getCommand())) {
             state = State.AUTH;
         } else if (CommandBytes.REG.check(commandPackage.getCommand())) {
             state = State.REG;
-        } else if (CommandBytes.FILES_LIST.check(commandPackage.getCommand()) && logged) {
-            sendFilesList();
-        } else if (CommandBytes.FILES.check(commandPackage.getCommand()) && logged) {
-            sendAllFiles();
-        } else if (CommandBytes.FILE.check(commandPackage.getCommand()) && logged) {
-            state = State.FILE_REQUEST;
+        } else if (logged) {
+            selectLoggedCommandState();
         } else {
             state = State.IDLE;
         }
     }
 
+    private void selectLoggedCommandState() throws IOException {
+        if (CommandBytes.FILES_LIST.check(commandPackage.getCommand())) {
+            sendFilesList();
+        } else if (CommandBytes.FILES.check(commandPackage.getCommand())) {
+            sendAllFiles();
+        } else if (CommandBytes.FILE.check(commandPackage.getCommand())) {
+            state = State.FILE_REQUEST;
+        } else if (CommandBytes.DELETE.check(commandPackage.getCommand())) {
+            state = State.DELETE_REQUEST;
+        }
+    }
+
     private void reg() throws NoEnoughDataException {
-        checkAvailableData(commandPackage.getByte(0) + commandPackage.getByte(1));
+        FileDownloader.checkAvailableData(byteBuf,commandPackage.getByte(0) + commandPackage.getByte(1));
         String incomingLogin = byteBuf.readCharSequence(commandPackage.getByte(0), StandardCharsets.UTF_8).toString();
         String incomingPass = passwordFormat(byteBuf.readCharSequence(commandPackage.getByte(1), StandardCharsets.UTF_8).toString());
         LogService.AUTH.info("Registration attempt", remoteAddress, "Login", incomingLogin);
@@ -114,7 +127,7 @@ public class ClientHandler {
     }
 
     private void auth() throws NoEnoughDataException, IOException {
-        checkAvailableData(commandPackage.getByte(0) + commandPackage.getByte(1));
+        FileDownloader.checkAvailableData(byteBuf,commandPackage.getByte(0) + commandPackage.getByte(1));
         String incomingLogin = byteBuf.readCharSequence(commandPackage.getByte(0), StandardCharsets.UTF_8).toString();
         String incomingPass = passwordFormat(byteBuf.readCharSequence(commandPackage.getByte(1), StandardCharsets.UTF_8).toString());
         LogService.AUTH.info("Auth attempt", remoteAddress, "Login", incomingLogin);
@@ -199,13 +212,17 @@ public class ClientHandler {
         }
     }
 
+    private void deleteFile() throws NoEnoughDataException, IOException {
+        String filename = downloader.downloadFileInfo().getName();
+        LogService.USERS.info("Request deleting file from user", login, filename);
+        Path file = rootDir.resolve(filename);
+        Files.deleteIfExists(file);
+        state = State.IDLE;
+    }
+
     private void setUserRepo() throws IOException {
         rootDir = server.getRootDir().resolve(login);
         if (Files.notExists(rootDir)) Files.createDirectory(rootDir);
-    }
-
-    private void checkAvailableData(int length) throws NoEnoughDataException {
-        if (byteBuf.readableBytes() < length) throw new NoEnoughDataException();
     }
 
     public void closeChannel() {
@@ -217,6 +234,6 @@ public class ClientHandler {
     }
 
     private enum State {
-        IDLE, COMMAND_SELECT, AUTH, REG, DOWNLOAD, FILE_REQUEST
+        IDLE, COMMAND_SELECT, AUTH, REG, DOWNLOAD, FILE_REQUEST, DELETE_REQUEST
     }
 }

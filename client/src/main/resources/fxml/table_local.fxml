@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <TableView xmlns:fx="http://javafx.com/fxml"
            xmlns="http://javafx.com/javafx"
-           fx:controller="app.controllers.TableFilesLocalController"
+           fx:controller="app.controllers.tables.TableFilesLocalController"
            fx:id="tableFilesLocal" onMouseClicked="#onClick">
     <placeholder>
         <Label text="No files in local directory"/>
@@ -16,4 +16,15 @@
         <TableColumn text="Last edited" fx:id="colFileDateLocal" sortable="false"
                      prefWidth="${0.3*tableFilesLocal.width}"/>
     </columns>
+    <contextMenu>
+        <ContextMenu>
+            <items>
+                <MenuItem fx:id="mUploadFile" text="Upload file" onAction="#fileHandler"/>
+                <MenuItem fx:id="mDeleteFile" text="Delete file" onAction="#delete"/>
+                <SeparatorMenuItem/>
+                <MenuItem fx:id="mUploadAll" text="Upload all" onAction="#uploadAll"/>
+                <MenuItem fx:id="mRefresh" text="Refresh list" onAction="#refresh"/>
+            </items>
+        </ContextMenu>
+    </contextMenu>
 </TableView>

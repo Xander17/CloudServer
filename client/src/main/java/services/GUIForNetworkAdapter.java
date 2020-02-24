@@ -36,7 +36,7 @@ public class GUIForNetworkAdapter {
     }
 
     public void setDownloadInProgressState() {
-        controller.setButtonsDisable(true);
+        controller.setGUIActionsDisable(true);
     }
 
     public void setRegistrationSuccess() {

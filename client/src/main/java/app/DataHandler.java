@@ -6,7 +6,9 @@ import io.netty.channel.ChannelHandlerContext;
 import resources.ClientSettings;
 import resources.CommandBytes;
 import resources.FileRepresentation;
-import services.*;
+import services.GUIForNetworkAdapter;
+import services.LogService;
+import services.NetworkForGUIAdapter;
 import services.settings.Settings;
 import services.transfer.CommandPackage;
 import services.transfer.DataSocketWriter;
@@ -28,7 +30,6 @@ public class DataHandler {
     private ByteBuf byteBuf;
     private FileDownloader downloader;
     private State state;
-    private boolean noEnoughBytes;
     private boolean logged;
     private int filesListCount;
     private List<FileRepresentation> filesList;
@@ -51,21 +52,23 @@ public class DataHandler {
     }
 
     public void handle() {
-        noEnoughBytes = false;
-        while (byteBuf.readableBytes() > 0 && !noEnoughBytes) {
-            stateExecute();
+        try {
+            while (byteBuf.readableBytes() > 0) {
+                stateExecute();
+            }
+        } catch (NoEnoughDataException ignored) {
         }
     }
 
-    private void stateExecute() {
-        try {
-            if (state == State.IDLE) listenPackageStart();
-            if (state == State.COMMAND_SELECT) selectCommandState();
-            if (state == State.DOWNLOAD && logged) fileDownload();
-            else if (state == State.FILES_LIST && logged) getFilesList();
-        } catch (NoEnoughDataException e) {
-            noEnoughBytes = true;
-        }
+    private void stateExecute() throws NoEnoughDataException {
+        if (state == State.IDLE) listenPackageStart();
+        if (state == State.COMMAND_SELECT) selectCommandState();
+        if (logged) stateLoggedExecute();
+    }
+
+    private void stateLoggedExecute() throws NoEnoughDataException {
+        if (state == State.DOWNLOAD) fileDownload();
+        else if (state == State.FILES_LIST) getFilesList();
     }
 
     private void listenPackageStart() {
@@ -85,7 +88,7 @@ public class DataHandler {
     }
 
     private void selectCommandState() throws NoEnoughDataException {
-        checkAvailableData(GlobalSettings.COMMAND_DATA_LENGTH + 1);
+        FileDownloader.checkAvailableData(byteBuf, GlobalSettings.COMMAND_DATA_LENGTH + 1);
         commandPackage.load();
         if (CommandBytes.AUTH_OK.check(commandPackage.getCommand())) {
             setAuthSuccess();
@@ -93,11 +96,17 @@ public class DataHandler {
             setRegSuccess();
         } else if (CommandBytes.ERROR.check(commandPackage.getCommand())) {
             setRegAuthError();
-        } else if (CommandBytes.FILES_LIST.check(commandPackage.getCommand()) && logged) {
+        } else if (logged) {
+            selectLoggedCommandState();
+        } else state = State.IDLE;
+    }
+
+    private void selectLoggedCommandState() {
+        if (CommandBytes.FILES_LIST.check(commandPackage.getCommand()) && logged) {
             filesListCount = commandPackage.getInt();
             filesList = new ArrayList<>();
             state = State.FILES_LIST;
-        } else state = State.IDLE;
+        }
     }
 
     private void setRegSuccess() {
@@ -143,24 +152,26 @@ public class DataHandler {
                 uploadFile(file);
             }
         } catch (IOException e) {
-            LogService.CLIENT.error("Ошибка отправки файлов", e.toString());
+            LogService.CLIENT.error("Sending file error", e.toString());
         }
     }
 
     // TODO: 22.02.2020 сохранить path в FileRepresentation и удалить этот метод
-    public void uploadFile(String file) {
-        Path path = repoPath.resolve(file);
+    public void uploadFile(String filename) {
+        Path path = repoPath.resolve(filename);
+
         uploadFile(path);
     }
 
     public void uploadFile(Path file) {
-        System.out.println("Uploading: " + file.getFileName());
+        String filename = file.getFileName().toString();
+        GUIForNetworkAdapter.getInstance().log("File upload starts: " + filename);
         if (FileUploader.upload(ctx, file)) {
-            LogService.CLIENT.info("File upload success", file.getFileName().toString());
-            System.out.println("File upload success: " + file.getFileName());
+            LogService.CLIENT.info("File upload success", filename);
+            GUIForNetworkAdapter.getInstance().log("File upload success: " + filename);
         } else {
-            LogService.CLIENT.info("File upload failed", file.getFileName().toString());
-            System.out.println("File upload failed: " + file.getFileName());
+            LogService.CLIENT.info("File upload failed", filename);
+            GUIForNetworkAdapter.getInstance().log("File upload failed: " + filename);
         }
     }
 
@@ -190,14 +201,17 @@ public class DataHandler {
     }
 
     public void sendFilesListRequest() {
+        GUIForNetworkAdapter.getInstance().log("Request files list from server");
         DataSocketWriter.sendCommand(ctx, CommandBytes.FILES_LIST);
     }
 
     public void sendAllFilesRequest() {
+        GUIForNetworkAdapter.getInstance().log("Request all files from server");
         DataSocketWriter.sendCommand(ctx, CommandBytes.FILES);
     }
 
     public void sendFileRequest(String filename) {
+        GUIForNetworkAdapter.getInstance().log("Downloading request - " + filename);
         DataSocketWriter.sendCommand(ctx, CommandBytes.FILE);
         FileUploader.sendFileInfo(ctx, filename);
     }
@@ -218,8 +232,19 @@ public class DataHandler {
         state = State.IDLE;
     }
 
-    private void checkAvailableData(int length) throws NoEnoughDataException {
-        if (byteBuf.readableBytes() < length) throw new NoEnoughDataException();
+    public void deleteLocalFile(FileRepresentation file) {
+        GUIForNetworkAdapter.getInstance().log("Deleting local file: " + file.getName());
+        try {
+            Files.deleteIfExists(repoPath.resolve(file.getName()));
+        } catch (IOException e) {
+            LogService.CLIENT.error("Error when deleting file", file.getName());
+        }
+    }
+
+    public void deleteFileFromServer(FileRepresentation file) {
+        GUIForNetworkAdapter.getInstance().log("Deleting file from server: " + file.getName());
+        DataSocketWriter.sendCommand(ctx, CommandBytes.DELETE);
+        FileUploader.sendFileInfo(ctx, file.getName());
     }
 
     private enum State {

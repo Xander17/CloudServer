@@ -76,7 +76,7 @@ public class FileDownloader {
     }
 
     private void readFilenameLen() throws NoEnoughDataException {
-        checkAvailableData(Short.BYTES);
+        checkAvailableData(byteBuf, Short.BYTES);
         filenameLen = byteBuf.readShort();
         if (filenameLen <= 0) {
             LogServiceCommon.TRANSFER.error("Filename length <= 0");
@@ -86,7 +86,7 @@ public class FileDownloader {
     }
 
     private void readFilename() throws NoEnoughDataException, IOException {
-        checkAvailableData(filenameLen + 2 * Long.BYTES);
+        checkAvailableData(byteBuf, filenameLen + 2 * Long.BYTES);
         filename = byteBuf.readCharSequence(filenameLen, StandardCharsets.UTF_8).toString();
         if (!filename.matches(FILENAME_PATTERN)) {
             LogServiceCommon.TRANSFER.error("Filename doesn't match pattern - " + filename);
@@ -115,7 +115,7 @@ public class FileDownloader {
     private void downloadFileData() throws NoEnoughDataException, IOException {
         while (fileLen > 0) {
             int blockSize = fileLen >= BUFFER_SIZE ? BUFFER_SIZE : (int) fileLen;
-            checkAvailableData(1);
+            checkAvailableData(byteBuf, 1);
             if (byteBuf.readableBytes() < blockSize) blockSize = byteBuf.readableBytes();
             byteBuf.readBytes(readBytes, 0, blockSize);
             out.write(readBytes, 0, blockSize);
@@ -129,7 +129,7 @@ public class FileDownloader {
     }
 
     private void readChecksum() throws NoEnoughDataException, IOException {
-        checkAvailableData(GlobalSettings.CHECKSUM_LENGTH);
+        checkAvailableData(byteBuf, GlobalSettings.CHECKSUM_LENGTH);
         for (int i = 0; i < GlobalSettings.CHECKSUM_LENGTH; i++) {
             if (byteBuf.readByte() != checksum[i]) {
                 LogServiceCommon.TRANSFER.error("Checksum error. Incoming file checksum - " + Arrays.toString(checksum));
@@ -152,10 +152,6 @@ public class FileDownloader {
         readBytes = new byte[BUFFER_SIZE];
         md.reset();
         closeFileForWrite();
-    }
-
-    private void checkAvailableData(int length) throws NoEnoughDataException {
-        if (byteBuf.readableBytes() < length) throw new NoEnoughDataException();
     }
 
     // TODO: 15.02.2020 нужна проверка контрольной суммы на сервере, чтобы не закачивать файл повторно
@@ -181,7 +177,12 @@ public class FileDownloader {
         }
     }
 
+    public static void checkAvailableData(ByteBuf buf, int length) throws NoEnoughDataException {
+        if (buf.readableBytes() < length) throw new NoEnoughDataException();
+    }
+
     private enum State {
-        IDLE, FILENAME_LENGTH, FILE_INFO, FILE_DATA, CHECKSUM, FAIL, SUCCESS
+        IDLE, FILENAME_LENGTH, FILE_INFO, FILE_DATA, CHECKSUM, FAIL, SUCCESS;
+
     }
 }

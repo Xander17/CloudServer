@@ -125,34 +125,30 @@
     -fx-border-width: 1;
 }
 
-.table-view .column-header,.table-view .filler{
+.table-view .column-header, .table-view .filler {
     -fx-background-color: -fx-scroll-up;
 }
 
-.table-view .column-header-background{
+.table-view .column-header-background {
     -fx-background-color: transparent;
 }
 
-.table-view .column-header{
+.table-view .column-header {
     -fx-border-width: 0 1 0 0;
     -fx-border-color: -fx-bordercolor;
 }
 
-.table-view .column-drag-header{
+.table-view .column-drag-header {
     -fx-background-color: -fx-textarea-bg;
 }
 
-.table-view .column-resize-line{
+.table-view .column-resize-line {
     -fx-background-color: -fx-bordercolor;
 }
 
 .table-row-cell, .table-row-cell:odd {
     -fx-background-color: transparent;
 }
-
-/*.table-row-cell:filled:selected{*/
-/*    -fx-font-weight: bold;*/
-/*}*/
 
 .table-cell {
     -fx-alignment: center;
@@ -163,12 +159,12 @@
     -fx-alignment: none;
 }
 
-.table-row-cell:filled:hover{
+.table-row-cell:filled:hover {
     -fx-background-color: -fx-list-bg-hover;
     -fx-background-radius: 5;
 }
 
-.table-row-cell:filled:hover>.table-cell{
+.table-row-cell:filled:hover > .table-cell {
     -fx-text-fill: -fx-font-over-color;
 }
 
@@ -195,25 +191,15 @@
     -fx-background-color: -fx-font-color;
 }
 
-#lblOnline {
-    -fx-background-color: -fx-menu-bg;
-    -fx-alignment: center;
-    -fx-font-weight: bold;
-    -fx-border-color: -fx-bordercolor;
-    -fx-border-width: 0 1 0 0;
-}
-
-#menuTop {
-    -fx-background-color: -fx-menu-bg;
-    -fx-border-color: -fx-bordercolor;
-    -fx-border-width: 0 0 0 1;
-}
-
 .context-menu {
     -fx-background-color: -fx-menu-bg;
     -fx-background-radius: 5;
     -fx-border-color: -fx-bordercolor;
     -fx-border-radius: 5;
+}
+.root.popup {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
 }
 
 .menu-button:showing,
@@ -222,7 +208,7 @@
 .menu-item:showing,
 .menu-item:hover,
 .menu-item:focused {
-    -fx-background-color: -fx-menu-hover;
+    -fx-background-color: -fx-list-bg-hover;
     -fx-background-radius: 5;
 }
 
@@ -233,16 +219,6 @@
 .menu-item:hover .label,
 .menu-item:focused .label {
     -fx-text-fill: -fx-font-over-color;
-}
-
-.radio-menu-item .radio {
-    -fx-background-color: -fx-font-color;
-}
-
-.radio-menu-item:showing .radio,
-.radio-menu-item:hover .radio,
-.radio-menu-item:focused .radio {
-    -fx-background-color: -fx-font-over-color;
 }
 
 .separator .line {

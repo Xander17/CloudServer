@@ -1,7 +1,6 @@
 package services;
 
 import app.DataHandler;
-import app.MainController;
 import resources.FileRepresentation;
 
 import java.util.List;
@@ -60,7 +59,15 @@ public class NetworkForGUIAdapter {
         handler.uploadFile(fileName);
     }
 
-    public void fileRequest(String fileName) {
+    public void requestFile(String fileName) {
         handler.sendFileRequest(fileName);
+    }
+
+    public void deleteLocalFile(FileRepresentation file) {
+        handler.deleteLocalFile(file);
+    }
+
+    public void deleteFileFromServer(FileRepresentation file) {
+        handler.deleteFileFromServer(file);
     }
 }

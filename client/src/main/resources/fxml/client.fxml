@@ -34,7 +34,7 @@
                                     prefWidth="${0.3*mainPane.width}"/>
                         </center>
                         <right>
-                            <Button fx:id="btnReceiveAllFromServer" onAction="#downloadAllFilesFromServer"
+                            <Button fx:id="btnReceiveAllFromServer" onAction="#requestAllFilesFromServer"
                                     styleClass="btnNotControl" text="&lt;&lt;&lt; Download All"
                                     prefWidth="${0.35*mainPane.width}"/>
                         </right>

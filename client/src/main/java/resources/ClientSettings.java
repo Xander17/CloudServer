@@ -15,12 +15,12 @@ public enum ClientSettings implements AppSettings {
         this.option = option;
     }
 
-    public AppOption getOption() {
-        return option;
-    }
-
     public static AppOption[] getSettings() {
         return AppSettings.getSettings(ClientSettings.values());
+    }
+
+    public AppOption getOption() {
+        return option;
     }
 }
 

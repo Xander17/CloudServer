@@ -1,15 +1,14 @@
 package app;
 
 import app.controllers.LoginWindowController;
-import app.controllers.TableFilesLocalController;
-import app.controllers.TableFilesServerController;
+import app.controllers.tables.TableFilesLocalController;
+import app.controllers.tables.TableFilesServerController;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.VBox;
 import resources.FileRepresentation;
 import services.GUIForNetworkAdapter;
 import services.LogService;
@@ -30,8 +29,6 @@ public class MainController implements Initializable {
     private Button btnSendAllToServer, btnGetFilesList, btnReceiveAllFromServer;
     @FXML
     private TextArea taLogs;
-    @FXML
-    private VBox vBoxListClient, vBoxListServer;
     @FXML
     private TableFilesLocalController tableFilesLocalController;
     @FXML
@@ -92,16 +89,13 @@ public class MainController implements Initializable {
     }
 
     public void setDownloadComplete() {
-        refreshFilesLists(true);
-        setButtonsDisable(false);
+        refreshClientList();
+        setGUIActionsDisable(false);
     }
 
     private void setElementsDisable(boolean status) {
         Platform.runLater(() -> {
             paneMainView.setDisable(status);
-//            mAbout.setDisable(status);
-//            mClear.setDisable(status);
-            //mSignOut.setDisable(status);
         });
     }
 
@@ -111,12 +105,14 @@ public class MainController implements Initializable {
         });
     }
 
-    public void setButtonsDisable(boolean status) {
+    public void setGUIActionsDisable(boolean status) {
         dataTransferDisable = status;
         Platform.runLater(() -> {
             btnSendAllToServer.setDisable(status);
             btnReceiveAllFromServer.setDisable(status);
             btnGetFilesList.setDisable(status);
+            tableFilesLocalController.setContextMenuDisable(status);
+            tableFilesServerController.setContextMenuDisable(status);
         });
     }
 
@@ -138,43 +134,38 @@ public class MainController implements Initializable {
     }
 
     private void uploadStart() {
-        setButtonsDisable(true);
+        setGUIActionsDisable(true);
     }
 
     private void uploadComplete() {
-        refreshServerList();
-        setButtonsDisable(false);
+        requestServerList();
+        setGUIActionsDisable(false);
     }
 
-    public void downloadAllFilesFromServer() {
-        setButtonsDisable(true);
+    public void requestAllFilesFromServer() {
+        setGUIActionsDisable(true);
         NetworkForGUIAdapter.getInstance().requestServerFiles();
     }
 
     public void refreshFilesLists() {
-        refreshFilesLists(false);
-    }
-
-    public void refreshFilesLists(boolean onlyClient) {
         btnGetFilesList.setDisable(true);
-        setButtonsDisable(true);
+        setGUIActionsDisable(true);
         refreshClientList();
-        if (!onlyClient) refreshServerList();
+        requestServerList();
         btnGetFilesList.setDisable(false);
     }
 
-    private void refreshClientList() {
+    public void refreshClientList() {
         tableFilesLocalController.update();
     }
 
-    public void refreshServerList() {
+    public void requestServerList() {
         NetworkForGUIAdapter.getInstance().requestServerFilesList();
-        addToLog("Server list request");
     }
 
     public void updateServerList(List<FileRepresentation> serverList) {
         tableFilesServerController.update(serverList);
-        setButtonsDisable(false);
+        setGUIActionsDisable(false);
     }
 
     public void addToLog(String str) {

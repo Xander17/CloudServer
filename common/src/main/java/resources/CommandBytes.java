@@ -10,7 +10,8 @@ public enum CommandBytes {
     REG_OK((byte) 5),
     FILES_LIST((byte) 6),
     FILES((byte) 7),
-    FILE((byte) 8);
+    FILE((byte) 8),
+    DELETE((byte) 9);
 
     private byte byteNum;
 

@@ -1,11 +1,11 @@
-package app.controllers;
+package app.controllers.tables;
 
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.input.MouseEvent;
 import resources.FileRepresentation;
 import services.NetworkForGUIAdapter;
 
@@ -18,6 +18,8 @@ public class TableFilesServerController extends TableViewController {
     private TableView<FileRepresentation> tableFilesServer;
     @FXML
     private TableColumn<FileRepresentation, String> colFileNameServer, colFileSizeServer, colFileDateServer;
+    @FXML
+    private MenuItem mDownloadFile, mDeleteFile, mDownloadAll, mRefresh;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -25,15 +27,7 @@ public class TableFilesServerController extends TableViewController {
         colFileSizeServer.setCellValueFactory(cellData -> cellData.getValue().lengthProperty());
         colFileDateServer.setCellValueFactory(cellData -> cellData.getValue().dateProperty());
         setRowDeselectListener(tableFilesServer);
-    }
-
-    @Override
-    public void onClick(MouseEvent mouseEvent) {
-        if (getMainController().isDataTransferDisable() || mouseEvent.getClickCount() < 2) return;
-        FileRepresentation file = tableFilesServer.getSelectionModel().getSelectedItem();
-        if (file == null) return;
-        getMainController().addToLog("Downloading request - " + file.getName());
-        NetworkForGUIAdapter.getInstance().fileRequest(file.getName());
+        list = tableFilesServer;
     }
 
     public void update(List<FileRepresentation> serverList) {
@@ -48,5 +42,45 @@ public class TableFilesServerController extends TableViewController {
                 getMainController().addToLog("Server list updated");
             });
         }
+    }
+
+    @Override
+    void setContextMenuSingleFileDisable(boolean status) {
+        mDownloadFile.setDisable(status);
+        mDeleteFile.setDisable(status);
+    }
+
+    @Override
+    void setContextMenuAllFilesDisable(boolean status) {
+        mDownloadAll.setDisable(status);
+    }
+
+    @Override
+    public void setContextMenuDisable(boolean status) {
+        setContextMenuSingleFileDisable(status);
+        setContextMenuAllFilesDisable(status);
+        mRefresh.setDisable(status);
+    }
+
+    @Override
+    public void fileHandler() {
+        FileRepresentation file = getSelectedFile();
+        if (file == null) return;
+        NetworkForGUIAdapter.getInstance().requestFile(file.getName());
+    }
+
+    public void delete() {
+        FileRepresentation file = getSelectedFile();
+        if (file == null) return;
+        NetworkForGUIAdapter.getInstance().deleteFileFromServer(file);
+        getMainController().requestServerList();
+    }
+
+    public void downloadAllRequest() {
+        getMainController().requestAllFilesFromServer();
+    }
+
+    public void refresh() {
+        getMainController().requestServerList();
     }
 }
