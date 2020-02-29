@@ -12,29 +12,14 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 public class Settings {
-    private static Properties properties;
-    private static String settingsFilePath;
+    private Properties properties;
+    private String settingsFilePath;
 
-    public static String get(AppSettings settings) {
-        if (properties == null) {
-            String s = "Settings wasn't loaded.";
-            LogServiceCommon.APP.error(s);
-            throw new NullPointerException(s);
-        }
-        return properties.getProperty(settings.getOption().getName());
+    public Settings(String filePath, AppOption[] options) {
+        load(filePath, options);
     }
 
-    public static int getInt(AppSettings settings) {
-        AppOption option = settings.getOption();
-        if (!option.isInteger()) {
-            String s = option.toString() + " is not integer";
-            LogServiceCommon.APP.fatal(s);
-            throw new IllegalArgumentException(s);
-        }
-        return Integer.parseInt(get(settings));
-    }
-
-    public static void load(String filePath, AppOption[] options) {
+    public void load(String filePath, AppOption[] options) {
         if (properties != null || filePath == null || options == null) return;
         properties = new Properties();
         settingsFilePath = filePath;
@@ -55,7 +40,26 @@ public class Settings {
         }
     }
 
-    private static boolean checkConsistent(AppOption[] options) {
+    public String get(AppSettings settings) {
+        if (properties == null) {
+            String s = "Settings wasn't loaded.";
+            LogServiceCommon.APP.error(s);
+            throw new NullPointerException(s);
+        }
+        return properties.getProperty(settings.getOption().getName());
+    }
+
+    public int getInt(AppSettings settings) {
+        AppOption option = settings.getOption();
+        if (!option.isInteger()) {
+            String s = option.toString() + " is not integer";
+            LogServiceCommon.APP.fatal(s);
+            throw new IllegalArgumentException(s);
+        }
+        return Integer.parseInt(get(settings));
+    }
+
+    private boolean checkConsistent(AppOption[] options) {
         boolean result = true;
         for (AppOption option : options) {
             String optionName = option.getName();
@@ -69,7 +73,7 @@ public class Settings {
         return result;
     }
 
-    private static void createDefaultProperties(AppOption[] options) {
+    private void createDefaultProperties(AppOption[] options) {
         properties.clear();
         for (AppOption option : options) {
             properties.put(option.getName(), option.getDefaultOption());
@@ -77,7 +81,7 @@ public class Settings {
         save();
     }
 
-    public static void set(AppOption option, String value) {
+    public void set(AppOption option, String value) {
         if (option.isInteger() && !checkIntegerFormat(value)) {
             String s = option + " should be an integer";
             LogServiceCommon.APP.error(s);
@@ -86,7 +90,7 @@ public class Settings {
         properties.put(option, value);
     }
 
-    public static void save() {
+    public void save() {
         try {
             Path settingsFile = Paths.get(settingsFilePath);
             OutputStream out = Files.newOutputStream(settingsFile);
@@ -99,7 +103,7 @@ public class Settings {
         }
     }
 
-    private static boolean checkIntegerFormat(String value) {
+    private boolean checkIntegerFormat(String value) {
         return value.matches("\\d+");
     }
 }

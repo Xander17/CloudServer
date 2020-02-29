@@ -1,11 +1,10 @@
 package ru.kornev.cloudcommon.services.transfer;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import ru.kornev.cloudcommon.resources.CommandBytes;
 import ru.kornev.cloudcommon.services.LogServiceCommon;
-import ru.kornev.cloudcommon.services.transfer.resources.Progress;
 import ru.kornev.cloudcommon.settings.GlobalSettings;
 
 import java.io.BufferedInputStream;
@@ -19,15 +18,19 @@ import java.security.NoSuchAlgorithmException;
 
 public class FileUploader {
 
-    // TODO: 24.02.2020 добавить в настройки 
-    private final int BUFFER_SIZE = 8192;
+    private final int BUFFER_SIZE;
 
     private Progress progress;
-    private boolean progressNeed;
+    private PooledByteBufAllocator allocator;
 
-    public FileUploader(boolean progressNeed) {
-        this.progressNeed = progressNeed;
-        if (progressNeed) this.progress = new Progress();
+    public FileUploader(int BUFFER_SIZE, Progress progress) {
+        this(BUFFER_SIZE);
+        this.progress = progress;
+    }
+
+    public FileUploader(int BUFFER_SIZE) {
+        this.BUFFER_SIZE = BUFFER_SIZE;
+        allocator = PooledByteBufAllocator.DEFAULT;
     }
 
     public boolean upload(ChannelHandlerContext ctx, Path file) {
@@ -35,10 +38,6 @@ public class FileUploader {
             writeFileStartByte(ctx);
             writeFileInfo(ctx, file);
             writeFileData(ctx, file);
-        } catch (InterruptedException e) {
-            LogServiceCommon.TRANSFER.error("Upload error - " + file.getFileName().toString());
-            LogServiceCommon.TRANSFER.error(e);
-            return false;
         } catch (NoSuchAlgorithmException e) {
             LogServiceCommon.TRANSFER.error("Checksum calculation error - " + file.getFileName().toString());
             LogServiceCommon.TRANSFER.error(e);
@@ -48,13 +47,13 @@ public class FileUploader {
             LogServiceCommon.TRANSFER.error(e);
             return false;
         } finally {
-            if (progressNeed) progress.resetProgress();
+            if (progress != null) progress.resetProgress();
         }
         return true;
     }
 
     private void writeFileStartByte(ChannelHandlerContext ctx) {
-        ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer();
+        ByteBuf buf = allocator.directBuffer();
         buf.writeByte(CommandBytes.PACKAGE_START.getByte());
         ctx.writeAndFlush(buf);
     }
@@ -72,36 +71,31 @@ public class FileUploader {
     }
 
     private void writeFileInfo(ChannelHandlerContext ctx, String filename, long fileLength, long fileDate) {
-        ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer();
+        ByteBuf buf = allocator.directBuffer();
         byte[] bytes = filename.getBytes(StandardCharsets.UTF_8);
         buf.writeShort((short) bytes.length);
         buf.writeBytes(bytes);
         buf.writeLong(fileLength);
         buf.writeLong(fileDate);
         ctx.writeAndFlush(buf);
-        if (progressNeed) progress.setMaxValue(fileLength);
+        if (progress != null) progress.setMaxValue(fileLength);
     }
 
-    private void writeFileData(ChannelHandlerContext ctx, Path file) throws NoSuchAlgorithmException, IOException, InterruptedException {
+    private void writeFileData(ChannelHandlerContext ctx, Path file) throws NoSuchAlgorithmException, IOException {
         MessageDigest md = MessageDigest.getInstance(GlobalSettings.CHECKSUM_PROTOCOL);
-        ByteBuf buf = ByteBufAllocator.DEFAULT.directBuffer();
         byte[] bytes = new byte[BUFFER_SIZE];
         BufferedInputStream in = new BufferedInputStream(new FileInputStream(file.toFile()));
         int blockSize;
         while ((blockSize = in.read(bytes)) != -1) {
-            buf.retain();
+            ByteBuf buf = allocator.directBuffer(BUFFER_SIZE);
             buf.writeBytes(bytes, 0, blockSize);
             md.update(bytes, 0, blockSize);
-            ctx.writeAndFlush(buf).sync();
-            buf.clear();
-            if (progressNeed) progress.addProgress(blockSize);
+            ctx.writeAndFlush(buf);
+            if (progress != null) progress.addProgress(blockSize);
         }
+        ByteBuf buf = allocator.directBuffer();
         buf.writeBytes(md.digest(), 0, GlobalSettings.CHECKSUM_LENGTH);
         ctx.writeAndFlush(buf);
         in.close();
-    }
-
-    public Progress getProgress() {
-        return progress;
     }
 }

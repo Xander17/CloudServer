@@ -1,6 +1,6 @@
 package ru.kornev.cloudserver.services.db;
 
-import ru.kornev.cloudcommon.services.settings.Settings;
+import ru.kornev.cloudserver.app.MainServer;
 import ru.kornev.cloudserver.resources.ServerSettings;
 import ru.kornev.cloudserver.services.LogService;
 
@@ -21,12 +21,12 @@ public class DatabaseSQL {
     private String pass;
 
     private DatabaseSQL() {
-        String host = Settings.get(ServerSettings.DATABASE_HOST);
-        String port = Settings.get(ServerSettings.DATABASE_PORT);
-        String name = Settings.get(ServerSettings.DATABASE_NAME);
-        String settings = Settings.get(ServerSettings.DATABASE_SETTINGS_STRING);
-        username = Settings.get(ServerSettings.DATABASE_USERNAME);
-        pass = Settings.get(ServerSettings.DATABASE_PASS);
+        String host = MainServer.getSettings().get(ServerSettings.DATABASE_HOST);
+        String port = MainServer.getSettings().get(ServerSettings.DATABASE_PORT);
+        String name = MainServer.getSettings().get(ServerSettings.DATABASE_NAME);
+        String settings = MainServer.getSettings().get(ServerSettings.DATABASE_SETTINGS_STRING);
+        username = MainServer.getSettings().get(ServerSettings.DATABASE_USERNAME);
+        pass = MainServer.getSettings().get(ServerSettings.DATABASE_PASS);
         connectionString = String.format("jdbc:mysql://%s:%s/%s?%s", host, port, name, settings);
     }
 

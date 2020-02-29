@@ -6,7 +6,7 @@ import ru.kornev.cloudcommon.exceptions.NoEnoughDataException;
 import ru.kornev.cloudcommon.resources.CommandBytes;
 import ru.kornev.cloudcommon.resources.LoginRegError;
 import ru.kornev.cloudcommon.services.transfer.CommandPackage;
-import ru.kornev.cloudcommon.services.transfer.DataSocketWriter;
+import ru.kornev.cloudcommon.services.transfer.CommandSender;
 import ru.kornev.cloudcommon.services.transfer.FileDownloader;
 import ru.kornev.cloudserver.services.LogService;
 import ru.kornev.cloudserver.services.db.AuthService;
@@ -32,7 +32,7 @@ public class AuthHandler {
         LogService.AUTH.info("Registration attempt", remoteAddress, "Login", incomingAuthData.login);
         LoginRegError error = AuthService.registerAndEchoMsg(incomingAuthData.login, incomingAuthData.pass);
         if (error == null) {
-            DataSocketWriter.sendCommand(ctx, CommandBytes.REG_OK);
+            CommandSender.sendCommand(ctx, CommandBytes.REG_OK);
             LogService.AUTH.info("Registration success", remoteAddress, "Login", incomingAuthData.login);
         } else sendLoginRegError(error);
     }
@@ -47,7 +47,7 @@ public class AuthHandler {
             sendLoginRegError(LoginRegError.LOGGED_ALREADY);
         else {
             login = incomingAuthData.login;
-            DataSocketWriter.sendCommand(ctx, CommandBytes.AUTH_OK, clientId);
+            CommandSender.sendCommand(ctx, CommandBytes.AUTH_OK, clientId);
             clientHandler.authSuccess();
             LogService.AUTH.info("Auth success", remoteAddress, "Login", login);
         }
@@ -63,7 +63,7 @@ public class AuthHandler {
 
     private void sendLoginRegError(LoginRegError err) {
         LogService.AUTH.warn(remoteAddress, err.toString());
-        DataSocketWriter.sendCommand(ctx, CommandBytes.ERROR, err.ordinal());
+        CommandSender.sendCommand(ctx, CommandBytes.ERROR, err.ordinal());
     }
 
     String getLogin() {

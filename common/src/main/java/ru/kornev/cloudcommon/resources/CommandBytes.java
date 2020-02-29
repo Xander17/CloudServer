@@ -19,14 +19,13 @@ public enum CommandBytes {
         this.byteNum = byteNum;
     }
 
-    // TODO: 16.02.2020 сделано для логирования, возможно нужно будет удалить
-    public static CommandBytes getCommand(byte b) {
-        CommandBytes[] values = CommandBytes.values();
-        for (int i = 0; i < values.length; i++) {
-            if (values[i].getByte() == b) return values[i];
-        }
-        return null;
-    }
+//    public static CommandBytes getCommand(byte b) {
+//        CommandBytes[] values = CommandBytes.values();
+//        for (int i = 0; i < values.length; i++) {
+//            if (values[i].getByte() == b) return values[i];
+//        }
+//        return null;
+//    }
 
     public boolean check(byte b) {
         return b == byteNum;

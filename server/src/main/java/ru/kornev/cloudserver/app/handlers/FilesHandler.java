@@ -3,9 +3,11 @@ package ru.kornev.cloudserver.app.handlers;
 import io.netty.channel.ChannelHandlerContext;
 import ru.kornev.cloudcommon.exceptions.NoEnoughDataException;
 import ru.kornev.cloudcommon.resources.CommandBytes;
-import ru.kornev.cloudcommon.services.transfer.DataSocketWriter;
+import ru.kornev.cloudcommon.services.transfer.CommandSender;
 import ru.kornev.cloudcommon.services.transfer.FileDownloader;
 import ru.kornev.cloudcommon.services.transfer.FileUploader;
+import ru.kornev.cloudserver.app.MainServer;
+import ru.kornev.cloudserver.resources.ServerSettings;
 import ru.kornev.cloudserver.services.LogService;
 
 import java.io.IOException;
@@ -29,8 +31,10 @@ public class FilesHandler {
         this.clientHandler = clientHandler;
         this.ctx = ctx;
         setUserRepository();
-        downloader = new FileDownloader(rootDir, clientHandler.getByteBuf(), false);
-        uploader = new FileUploader(false);
+        int bufferSize = MainServer.getSettings().getInt(ServerSettings.DOWNLOAD_BUFFER_SIZE);
+        downloader = new FileDownloader(rootDir, clientHandler.getByteBuf(), bufferSize);
+        bufferSize = MainServer.getSettings().getInt(ServerSettings.UPLOAD_BUFFER_SIZE);
+        uploader = new FileUploader(bufferSize);
     }
 
     private void setUserRepository() throws IOException {
@@ -41,7 +45,7 @@ public class FilesHandler {
     void sendFilesList() throws IOException {
         LogService.USERS.info("Sending files list to user", clientHandler.getLogin());
         List<Path> list = Files.list(rootDir).sorted(Comparator.naturalOrder()).collect(Collectors.toList());
-        DataSocketWriter.sendCommand(ctx, CommandBytes.FILES_LIST, list.size());
+        CommandSender.sendCommand(ctx, CommandBytes.FILES_LIST, list.size());
         for (Path file : list) {
             uploader.sendFileInfo(ctx, file);
         }
@@ -69,7 +73,7 @@ public class FilesHandler {
     }
 
     private void sendFile(Path file) {
-        if(!Files.exists(file)) {
+        if (!Files.exists(file)) {
             return;
         }
         LogService.USERS.info("Uploading: " + file.getFileName().toString());
@@ -102,6 +106,7 @@ public class FilesHandler {
 
     void deleteFile() throws NoEnoughDataException, IOException {
         String filename = downloader.downloadFileName();
+        downloader.reset();
         LogService.USERS.info("Request deleting file from user", clientHandler.getLogin(), filename);
         Path file = rootDir.resolve(filename);
         Files.deleteIfExists(file);

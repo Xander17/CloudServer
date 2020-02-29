@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import ru.kornev.cloudcommon.services.settings.Settings;
 import ru.kornev.cloudserver.app.handlers.ClientDataHandler;
 import ru.kornev.cloudserver.resources.ServerSettings;
 import ru.kornev.cloudserver.services.LogService;
@@ -20,8 +19,8 @@ public class ServerInboundHandler extends ChannelInboundHandlerAdapter {
 
     public ServerInboundHandler(MainServer server) {
         this.server = server;
-        bufferMinSize = Settings.getInt(ServerSettings.INBOUND_BUFFER_MIN_SIZE);
-        bufferMaxSize = Settings.getInt(ServerSettings.INBOUND_BUFFER_MAX_SIZE);
+        bufferMinSize = MainServer.getSettings().getInt(ServerSettings.INBOUND_BUFFER_MIN_SIZE);
+        bufferMaxSize = MainServer.getSettings().getInt(ServerSettings.INBOUND_BUFFER_MAX_SIZE);
         bufferSliceIndex = bufferMaxSize / 2;
     }
 
@@ -42,7 +41,6 @@ public class ServerInboundHandler extends ChannelInboundHandlerAdapter {
         accumulator.writeBytes((ByteBuf) msg);
         clientHandler.handle();
         if (accumulator.readableBytes() == 0) accumulator.clear();
-            // TODO: 14.02.2020 проверить работу слайса
         else if (accumulator.writerIndex() > bufferSliceIndex) accumulator.slice();
         ((ByteBuf) msg).release();
     }

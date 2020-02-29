@@ -1,10 +1,10 @@
 package ru.kornev.cloudcommon.services.transfer;
 
 import io.netty.buffer.ByteBuf;
+import ru.kornev.cloudcommon.callbacks.MessageCallback;
 import ru.kornev.cloudcommon.exceptions.NoEnoughDataException;
 import ru.kornev.cloudcommon.resources.FileRepresentation;
 import ru.kornev.cloudcommon.services.LogServiceCommon;
-import ru.kornev.cloudcommon.services.transfer.resources.Progress;
 import ru.kornev.cloudcommon.settings.GlobalSettings;
 
 import java.io.FileOutputStream;
@@ -16,13 +16,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-// TODO: 14.02.2020 прикрутить логсервис вместо sout
+// TODO: 14.02.2020 прикрутить логирование в клиент
 
 public class FileDownloader {
     private final String FILENAME_PATTERN = "^[.\\w\\p{L}~@#$%^\\-_(){}'` ]+$";
 
-    // TODO: 24.02.2020 добавить в настройки 
-    private final int BUFFER_SIZE = 8192;
+    private final int BUFFER_SIZE;
     private Path rootDir;
     private ByteBuf byteBuf;
     private int filenameLen;
@@ -38,11 +37,15 @@ public class FileDownloader {
     private byte[] readBytes;
 
     private Progress progress;
-    private boolean progressNeed;
+    private MessageCallback messageCallback;
 
-    public FileDownloader(Path rootDir, ByteBuf byteBuf, boolean progressNeed) {
-        this.progressNeed = progressNeed;
-        if (progressNeed) this.progress = new Progress();
+    public FileDownloader(Path rootDir, ByteBuf byteBuf, int BUFFER_SIZE, Progress progress) {
+        this(rootDir, byteBuf, BUFFER_SIZE);
+        this.progress = progress;
+    }
+
+    public FileDownloader(Path rootDir, ByteBuf byteBuf, int BUFFER_SIZE) {
+        this.BUFFER_SIZE = BUFFER_SIZE;
         this.rootDir = rootDir;
         this.byteBuf = byteBuf;
         this.fileInfoOnly = false;
@@ -64,6 +67,7 @@ public class FileDownloader {
         } catch (IOException e) {
             LogServiceCommon.TRANSFER.error("Error during file download", e.toString());
             LogServiceCommon.TRANSFER.error(e);
+            messageCallback("Error during file download");
             closeFileForWrite();
             state = State.FAIL;
         }
@@ -126,9 +130,10 @@ public class FileDownloader {
             LogServiceCommon.TRANSFER.info("File info getting success");
             state = State.SUCCESS;
         } else {
-            if (progressNeed) progress.setMaxValue(fileLen);
+            if (progress != null) progress.setMaxValue(fileLen);
             state = State.FILE_DATA;
             LogServiceCommon.TRANSFER.info("Downloading file - " + filename);
+            messageCallback("Downloading file " + filename);
             openFileForWrite();
         }
     }
@@ -142,10 +147,10 @@ public class FileDownloader {
             out.write(readBytes, 0, blockSize);
             md.update(readBytes, 0, blockSize);
             fileLen -= blockSize;
-            if (progressNeed) progress.addProgress(blockSize);
+            if (progress != null) progress.addProgress(blockSize);
         }
         checksum = md.digest();
-        if (progressNeed) progress.resetProgress();
+        if (progress != null) progress.resetProgress();
         state = State.CHECKSUM;
         closeFileForWrite();
         LogServiceCommon.TRANSFER.info("Download complete - " + filename);
@@ -162,6 +167,7 @@ public class FileDownloader {
             }
         }
         state = State.SUCCESS;
+        messageCallback("Download complete. Checksum OK.");
         LogServiceCommon.TRANSFER.info("Checksum for " + filename + " - OK");
     }
 
@@ -173,7 +179,7 @@ public class FileDownloader {
         fileInfoOnly = false;
         state = State.FILENAME_LENGTH;
         readBytes = new byte[BUFFER_SIZE];
-        if (progressNeed) progress.setMaxValue(0);
+        if (progress != null) progress.setMaxValue(0);
         md.reset();
         closeFileForWrite();
     }
@@ -201,11 +207,15 @@ public class FileDownloader {
         }
     }
 
-    public Progress getProgress() {
-        return progress;
+    public void setMessageCallback(MessageCallback messageCallback) {
+        this.messageCallback = messageCallback;
+    }
+
+    private void messageCallback(String msg) {
+        if (messageCallback != null) messageCallback.callback(msg);
     }
 
     private enum State {
-        FILENAME_LENGTH, FILE_INFO, FILE_DATA, CHECKSUM, FAIL, SUCCESS;
+        FILENAME_LENGTH, FILE_INFO, FILE_DATA, CHECKSUM, FAIL, SUCCESS
     }
 }

@@ -2,7 +2,7 @@ package ru.kornev.cloudcommon.services;
 
 import ru.kornev.cloudcommon.resources.LoginRegError;
 
-// TODO: 15.02.2020 Нужен от в модуле common? Или только в клиенте
+// TODO: 15.02.2020 прикрутить к серверу
 public class FormatChecker {
 
     private LoginRegError currentError;

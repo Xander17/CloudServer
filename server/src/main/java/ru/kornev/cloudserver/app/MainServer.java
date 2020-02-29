@@ -6,7 +6,6 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import ru.kornev.cloudcommon.services.LogServiceCommon;
 import ru.kornev.cloudcommon.services.settings.Settings;
 import ru.kornev.cloudserver.app.handlers.ClientDataHandler;
 import ru.kornev.cloudserver.resources.ServerSettings;
@@ -22,6 +21,8 @@ import java.nio.file.Paths;
 import java.util.Vector;
 
 public class MainServer {
+
+    private static Settings settings;
 
     private DatabaseSQL db;
     private ChannelFuture channelFuture;
@@ -45,10 +46,13 @@ public class MainServer {
         new MainServer();
     }
 
+    public static Settings getSettings() {
+        return settings;
+    }
+
     private void setSettings() {
-        LogServiceCommon.setAppendConsole(true);
-        Settings.load("server.cfg", ServerSettings.getSettings());
-        rootDir = Paths.get(Settings.get(ServerSettings.ROOT_DIRECTORY));
+        settings = new Settings("server.cfg", ServerSettings.getSettings());
+        rootDir = Paths.get(settings.get(ServerSettings.ROOT_DIRECTORY));
     }
 
     private void runDB() {
@@ -63,7 +67,7 @@ public class MainServer {
     private void runServer() throws InterruptedException {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
-        int port = Settings.getInt(ServerSettings.SERVER_PORT);
+        int port = settings.getInt(ServerSettings.SERVER_PORT);
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(bossGroup, workerGroup)

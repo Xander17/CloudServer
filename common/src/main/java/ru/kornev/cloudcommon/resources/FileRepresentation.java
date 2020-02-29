@@ -14,9 +14,11 @@ public class FileRepresentation {
     private StringProperty name;
     private StringProperty length;
     private StringProperty date;
+    private Path path;
 
     public FileRepresentation(Path path) {
         try {
+            this.path = path;
             this.name = new SimpleStringProperty(path.getFileName().toString());
             this.length = new SimpleStringProperty(getStringLength(Files.size(path)));
             this.date = new SimpleStringProperty(getFormattedDate(Files.getLastModifiedTime(path).toMillis()));
@@ -26,6 +28,7 @@ public class FileRepresentation {
     }
 
     public FileRepresentation(String name, long length, long dateMillis) {
+        this.path = null;
         this.name = new SimpleStringProperty(name);
         this.length = new SimpleStringProperty(getStringLength(length));
         this.date = new SimpleStringProperty(getFormattedDate(dateMillis));
@@ -82,5 +85,9 @@ public class FileRepresentation {
     @Override
     public String toString() {
         return name.get();
+    }
+
+    public Path getPath() {
+        return path;
     }
 }

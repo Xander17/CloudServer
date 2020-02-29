@@ -5,16 +5,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <revision>0.3.2-SNAPSHOT</revision>
+        <revision>0.3.8-SNAPSHOT</revision>
     </properties>
 
-    <groupId>ru.geekbrains.cloud</groupId>
-    <artifactId>cloud-server</artifactId>
+    <groupId>ru.kornev.cloud</groupId>
+    <artifactId>cloud</artifactId>
     <packaging>pom</packaging>
     <version>${revision}</version>
     <modules>
         <module>server</module>
-        <module>client</module>
+        <module>client-gui</module>
         <module>common</module>
+        <module>client-network</module>
     </modules>
 </project>
