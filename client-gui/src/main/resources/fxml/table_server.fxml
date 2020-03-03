@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<TableView xmlns:fx="http://javafx.com/fxml"
+           xmlns="http://javafx.com/javafx"
+           fx:controller="ru.kornev.cloudclient.app.controllers.tables.TableFilesServerController"
+           fx:id="tableFilesServer" onMouseClicked="#onClick">
+    <placeholder>
+        <Label text="No files on server"/>
+    </placeholder>
+    <columns>
+        <TableColumn text="File name" fx:id="colFileNameServer" sortable="false"
+                     prefWidth="${0.5*tableFilesServer.width}"/>
+        <TableColumn text="Size" fx:id="colFileSizeServer" sortable="false"
+                     prefWidth="${0.19*tableFilesServer.width}"/>
+        <TableColumn text="Uploaded date" fx:id="colFileDateServer" sortable="false"
+                     prefWidth="${0.3*tableFilesServer.width}"/>
+    </columns>
+    <contextMenu>
+        <ContextMenu>
+            <items>
+                <MenuItem fx:id="mDownloadFile" text="Download file" onAction="#fileHandler"/>
+                <MenuItem fx:id="mDeleteFile" text="Delete file" onAction="#delete"/>
+                <SeparatorMenuItem/>
+                <MenuItem fx:id="mDownloadAll" text="Download all" onAction="#downloadAllRequest"/>
+                <MenuItem fx:id="mRefresh" text="Refresh list" onAction="#refresh"/>
+            </items>
+        </ContextMenu>
+    </contextMenu>
+</TableView>

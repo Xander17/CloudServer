@@ -1,0 +1,18 @@
+* {
+    -fx-border-gradient: linear-gradient(from 0% 0% to 20% 60%, white, -fx-bordercolor);
+
+    -fx-textfield-bg: linear-gradient(-fx-textfield-col1, -fx-textfield-col2);
+    -fx-textarea-bg: linear-gradient(-fx-textarea-col1, -fx-textarea-col2);
+
+    -fx-windows-bg: linear-gradient(from 0% 0% to 20% 60%, -fx-windows-bg-col1, -fx-windows-bg-col2);
+
+    -fx-button-up: linear-gradient(from 49% 0% to 51% 100%, -fx-button-up-col1, -fx-button-up-col2);
+    -fx-button-over: linear-gradient(to bottom, -fx-button-up-col1 20%, -fx-button-over-col 50%, -fx-button-up-col1 80%);
+    -fx-button-down: linear-gradient(from 49% 0% to 51% 100%, -fx-button-down-col1, -fx-button-down-col2);
+
+    -fx-scroll-up: linear-gradient(to top, -fx-scroll-col1, -fx-scroll-col2);
+    -fx-scroll-down: linear-gradient(to bottom, -fx-scroll-col1, -fx-scroll-col2);
+    -fx-scroll-thumb: linear-gradient(to right, -fx-scroll-col1, -fx-scroll-col2);
+
+    -fx-menu-bg: linear-gradient(to bottom, -fx-menu-bg-col1, -fx-menu-bg-col2);
+}

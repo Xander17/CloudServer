@@ -1,0 +1,221 @@
+/*Common root settings*/
+.root * {
+    -fx-text-fill: -fx-font-color;
+}
+
+.root {
+    -fx-background-color: -fx-textarea-bg;
+    -fx-border-color: -fx-bordercolor;
+    -fx-border-width: 0 1 1 1;
+}
+
+/*Login and registration windows*/
+.dialogWindow {
+    -fx-border-color: -fx-border-gradient;
+    -fx-border-width: 2;
+    -fx-border-radius: 10;
+    -fx-background-color: -fx-windows-bg;
+    -fx-background-radius: 10;
+    -fx-effect: dropshadow(three-pass-box, dimgrey, 5, 0, 2, 2);
+}
+
+.lblDialogWindowTitle {
+    -fx-font-weight: bold;
+    -fx-font-family: "Arial Black";
+    -fx-font-size: 15px;
+    -fx-padding: 3 0 0 0;
+    -fx-border-width: 0 0 2 0;
+    -fx-border-style: solid;
+    -fx-border-color: -fx-bordercolor;
+    -fx-border-insets: 0 0 5 0;
+    -fx-alignment: center;
+}
+
+.lblLoginWindow {
+    -fx-font-weight: bold;
+    -fx-padding: 3;
+}
+
+#lblLoginInfo, #lblRegInfo {
+    -fx-text-fill: -fx-textcolor-alert;
+}
+
+.text-field, .password-field {
+    -fx-background-color: -fx-textfield-bg;
+    -fx-border-color: -fx-bordercolor;
+    -fx-border-width: 1;
+    -fx-effect: innershadow(three-pass-box, dimgrey, 2, 0, 1, 1);
+}
+
+.dialogWindow .text-field,
+.dialogWindow .password-field {
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-alignment: center;
+}
+
+/*Buttons*/
+.btnCommand {
+    -fx-background-color: -fx-button-up;
+    -fx-border-color: -fx-bordercolor;
+    -fx-border-width: 1;
+    -fx-pref-width: 100;
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-font-color;
+    -fx-effect: innershadow(three-pass-box, dimgrey, 2, 0, -1, -1);
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-border-insets: 5;
+    -fx-background-insets: 5;
+}
+
+.btnCommand:hover {
+    -fx-background-color: -fx-button-over;
+}
+
+.btnCommand:pressed {
+    -fx-background-color: -fx-button-down;
+    -fx-effect: innershadow(three-pass-box, dimgrey, 2, 0, 1, 1);
+}
+
+/*Text area taLogs*/
+#taLogs {
+    -fx-background-color: -fx-textarea-bg;
+    -fx-border-color: -fx-bordercolor;
+    -fx-border-width: 2;
+    -fx-wrap-text: true;
+    -fx-effect: innershadow(three-pass-box, dimgrey, 2, 0, 1, 1);
+    -fx-highlight-fill: -fx-text-selection-color;
+    -fx-highlight-text-fill: -fx-text-selection-font-color;
+}
+
+#taLogs .scroll-pane,
+#taLogs .scroll-pane .viewport,
+#taLogs .scroll-pane .content {
+    -fx-background-color: transparent;
+}
+
+/*TableView*/
+.table-view {
+    -fx-background-insets: 0;
+    -fx-background-color: -fx-textarea-bg;
+    -fx-border-color: -fx-bordercolor;
+    -fx-border-width: 1;
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: -fx-scroll-up;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header {
+    -fx-border-width: 0 1 0 0;
+    -fx-border-color: -fx-bordercolor;
+}
+
+.table-view .column-drag-header {
+    -fx-background-color: -fx-textarea-bg;
+}
+
+.table-view .column-resize-line {
+    -fx-background-color: -fx-bordercolor;
+}
+
+.table-row-cell, .table-row-cell:odd {
+    -fx-background-color: transparent;
+}
+
+.table-cell {
+    -fx-alignment: center;
+    -fx-border-width: 0;
+}
+
+#colFileNameLocal, #colFileNameServer {
+    -fx-alignment: none;
+}
+
+.table-row-cell:filled:hover {
+    -fx-background-color: -fx-list-bg-hover;
+    -fx-background-radius: 5;
+}
+
+.table-row-cell:filled:hover > .table-cell {
+    -fx-text-fill: -fx-font-over-color;
+}
+
+/*Scroll bar*/
+.scroll-bar {
+    -fx-effect: dropshadow(three-pass-box, dimgrey, 2, 0, -1, 0);
+    -fx-background-color: -fx-scrollbar;
+}
+
+.increment-button {
+    -fx-background-color: -fx-scroll-up;
+}
+
+.decrement-button {
+    -fx-background-color: -fx-scroll-down;
+}
+
+.thumb {
+    -fx-background-color: -fx-scroll-thumb;
+    -fx-border-color: -fx-bordercolor;
+}
+
+.increment-arrow,
+.decrement-arrow {
+    -fx-background-color: -fx-font-color;
+}
+
+/*Context menu*/
+.context-menu {
+    -fx-background-color: -fx-menu-bg;
+    -fx-background-radius: 5;
+    -fx-border-color: -fx-bordercolor;
+    -fx-border-radius: 5;
+}
+
+.root.popup {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}
+
+.menu-button:showing,
+.menu-button:hover,
+.menu-button:focused,
+.menu-item:showing,
+.menu-item:hover,
+.menu-item:focused {
+    -fx-background-color: -fx-menu-hover-color;
+    -fx-background-radius: 5;
+}
+
+.menu-button:showing > .label,
+.menu-button:hover > .label,
+.menu-button:focused > .label,
+.menu-item:showing .label,
+.menu-item:hover .label,
+.menu-item:focused .label {
+    -fx-text-fill: -fx-font-over-color;
+}
+
+.separator .line {
+    -fx-border-color: -fx-bordercolor;
+}
+
+/*Progress bar*/
+.progress-bar, .progress-bar .track {
+    -fx-background-color: -fx-textfield-bg;
+}
+
+.progress-bar .bar {
+    -fx-background-color: -fx-progressbar-bar-color;
+}
+
+/*Progress label*/
+#lblProgress {
+    -fx-background-color: -fx-textfield-bg;
+}
